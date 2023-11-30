@@ -1,0 +1,96 @@
+{
+  "Hannah Gibson": {
+    "name": "Hannah Gibson",
+    "character": "Zlymenteen Bojontwa",
+    "dob": "August 15, 1779 IZ",
+    "profile": "profiles/Hannah Gibson.jpg",
+    "id": 0,
+    "color": "#FF0000",
+    "accent": false,
+    "password": "$2b$10$.G63CxtEoKBdU77JsZjf5elgTq28qgOMcKcUOMWZu6jW81KAJF1B6",
+    "hasPassword": true
+  },
+  "Liam Keesee": {
+    "name": "Liam Keesee",
+    "character": "Zhenzhen Ogiene",
+    "dob": "March 29, 0001 IZ",
+    "profile": "profiles/Liam Keesee.jpeg",
+    "id": 1,
+    "color": "#FFA500",
+    "accent": true,
+    "password": "$2b$10$2J0uCp7RcmDNRg6MWERB1ewpLHgJaAh7n0f01qHJyofajlIv1AoYi",
+    "hasPassword": true
+  },
+  "Joshua Keesee": {
+    "name": "Joshua Keesee",
+    "character": "Chad Magenta",
+    "dob": "Octember 32, 1942 IZ",
+    "profile": "profiles/Joshua Keesee.png",
+    "id": 2,
+    "color": "#FF00FF",
+    "accent": false,
+    "password": "$2b$10$k92D8oYNX8UCQV29CW.JpOBY6.7JvTUS/RpwUfvV7rawE1e4Pm9Ly",
+    "hasPassword": true
+  },
+  "Abigail Pomicter": {
+    "name": "Abigail Pomicter",
+    "character": "Clementine Favila",
+    "dob": "August 13, 1994 IZ",
+    "profile": "profiles/Abigail Pomicter.png",
+    "id": 3,
+    "color": "#800080",
+    "accent": true,
+    "password": "$2b$10$G8uWq0DbKborRxxGPGFzSOte.eXwLo87ivZ.S1T5fSGQQZoEMgW/C"
+  },
+  "Kyla Lents": {
+    "name": "Kyla Lents",
+    "character": "Kycumber Bear",
+    "dob": "Octember 32, 2042 IZ",
+    "profile": "",
+    "id": 4,
+    "color": "#FFC0CB",
+    "accent": true,
+    "password": "$2b$10$ISBIhgPBVRCTQjEkBCx.COdwmcdEKwgt4NQiZ2TmAHl9y6hvd25em"
+  },
+  "Marcus Johnson": {
+    "name": "Marcus Johnson",
+    "character": "Sucram Avawettæ",
+    "dob": "Muy 30, 721 IZ",
+    "profile": "",
+    "id": 5,
+    "color": "#808080",
+    "accent": true,
+    "password": "$2b$10$A/3H1FUR76PFKvbO0D8jL.DKSVF.0mpWbY6pwTkbxt7etqTBVsTty"
+  },
+  "Miranda Gibson": {
+    "name": "Miranda Gibson",
+    "character": "Dr. Prof. Gen. Sherman The Great XIII Esq.",
+    "dob": "March 14, 450 PS",
+    "profile": "profiles/Miranda Gibson.webp",
+    "id": 6,
+    "color": "#0000FF",
+    "accent": true,
+    "password": "$2b$10$04xRlQ7suEzvIpHZnIoRMO2b1JvT7.deWEOXXPLnLHXgUgG2G44c.",
+    "hasPassword": true
+  },
+  "Liliana Cramer": {
+    "name": "Liliana Cramer",
+    "character": "Xemine 'Miss' Sloop",
+    "dob": "April 10, 1987 IZ",
+    "profile": "",
+    "id": 7,
+    "color": "#008000",
+    "accent": true,
+    "password": "$2b$10$lTEepYUPkt/sNOj45kfM8ei8l3NChc4swFpwJE8Gow9S8HlNaH13O"
+  },
+  "Sherman Magenta": {
+    "name": "Sherman Magenta",
+    "character": "Miranda Gibson",
+    "dob": "March 14, 450 PS",
+    "profile": "profiles/Sherman Magenta.webp",
+    "id": 8,
+    "color": "#00FF00",
+    "accent": true,
+    "password": "$2b$10$RHpD/yseyDPOhkt0B08ZQ.P/nw2LjVzIT2JpEw/veCtwfTFDCnwQG"
+  }
+}
