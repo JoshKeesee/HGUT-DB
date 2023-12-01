@@ -2,10 +2,10 @@ const express = require("express");
 const app = express();
 const server = require("http").createServer(app);
 const io = require("socket.io")(server, {
-	cors: {
-		origin: "*",
-		methods: ["GET", "POST"],
-	},
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
 });
 const { get, set } = require("./db");
 const fs = require("fs");
@@ -20,7 +20,7 @@ const pushKeys = {
 webpush.setVapidDetails(
   "mailto:joshuakeesee1@gmail.com",
   pushKeys.public,
-  pushKeys.private
+  pushKeys.private,
 );
 const profiles = require("./profiles.json");
 Object.keys(profiles).forEach((p) => {
@@ -38,7 +38,8 @@ const im = "./images";
 const maxMessages = 50;
 const online = {},
   switched = {},
-  typing = {};
+  typing = {},
+  callList = [];
 
 const setup = () => {
   if (!fs.existsSync(p)) fs.mkdirSync(p);
@@ -93,7 +94,7 @@ app.post("/message", (req, res) => {
   sendMessage(r.message, req.user, "chat", true);
 });
 app.get("/p", (req, res) => {
-	res.json(profiles);
+  res.json(profiles);
 });
 
 io.of("chat").use(ioAuth);
@@ -118,16 +119,34 @@ io.of("voice").on("connection", (socket) => {
   });
   socket.on("camera", (c) => {
     socket.user.camera = c;
+    if (!switched[socket.user.peerId])
+      switched[socket.user.peerId] = {
+        camera: socket.user.camera,
+        audio: socket.user.audio,
+        id: socket.user.id,
+      };
     switched[socket.user.peerId].camera = c;
     socket.broadcast.emit("camera", [c, socket.user.peerId]);
   });
   socket.on("audio", (a) => {
     socket.user.audio = a;
+    if (!switched[socket.user.peerId])
+      switched[socket.user.peerId] = {
+        camera: socket.user.camera,
+        audio: socket.user.audio,
+        id: socket.user.id,
+      };
     switched[socket.user.peerId].audio = a;
     socket.broadcast.emit("audio", [a, socket.user.peerId]);
   });
   socket.on("present", (p) => {
     socket.user.present = p;
+    if (!switched[socket.user.peerId])
+      switched[socket.user.peerId] = {
+        camera: socket.user.camera,
+        audio: socket.user.audio,
+        id: socket.user.id,
+      };
     switched[socket.user.peerId].present = p;
     io.of(curr).emit("switched", switched);
     socket.broadcast.emit("add person", [p, socket.user.peerId, true]);
@@ -140,9 +159,11 @@ io.of("voice").on("connection", (socket) => {
       audio: socket.user.audio,
       id: socket.user.id,
     };
-    socket.emit("user", socket.user);
+    callList.push(socket.user);
+    socket.emit("call list", callList);
+    // socket.broadcast.emit("add person", socket.user);
     io.of(curr).emit("switched", switched);
-    socket.broadcast.emit("add person", socket.user);
+    socket.emit("user", socket.user);
   });
 
   socket.on("chat message", (message) => {
@@ -154,6 +175,7 @@ io.of("voice").on("connection", (socket) => {
   socket.on("disconnect", () => {
     delete o[socket.user.id];
     delete switched[socket.user.peerId];
+    callList.splice(callList.indexOf(socket.user.peerId), 1);
     socket.broadcast.emit("remove person", socket.user);
     socket.broadcast.emit("online", o);
     socket.broadcast.emit("switched", switched);
@@ -199,7 +221,7 @@ io.of("chat").on("connection", (socket) => {
     else if (!t && typing[socket.user.room].includes(socket.user.id))
       typing[socket.user.room].splice(
         typing[socket.user.room].indexOf(socket.user.id),
-        1
+        1,
       );
     io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
   });
@@ -211,7 +233,7 @@ io.of("chat").on("connection", (socket) => {
     if (typing[socket.user.room].includes(socket.user.id))
       typing[socket.user.room].splice(
         typing[socket.user.room].indexOf(socket.user.id),
-        1
+        1,
       );
     io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
     io.of(curr).emit("online", o);
@@ -229,8 +251,8 @@ io.of("chat").on("connection", (socket) => {
       "load messages",
       m.slice(
         Math.max(0, m.length - lm - maxMessages),
-        Math.max(0, m.length - lm)
-      )
+        Math.max(0, m.length - lm),
+      ),
     );
   });
 
@@ -257,7 +279,7 @@ io.of("chat").on("connection", (socket) => {
     if (typing[socket.user.room].includes(socket.user.id))
       typing[socket.user.room].splice(
         typing[socket.user.room].indexOf(socket.user.id),
-        1
+        1,
       );
     socket.leave(socket.user.room);
     io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
@@ -270,7 +292,7 @@ io.of("chat").on("connection", (socket) => {
     if (socket.user.unread.includes(socket.user.room))
       socket.user.unread.splice(
         socket.user.unread.indexOf(socket.user.room),
-        1
+        1,
       );
     const users = get("users") || {};
     users[socket.user.id] = socket.user;

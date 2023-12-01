@@ -40,7 +40,7 @@
     "id": 3,
     "color": "#800080",
     "accent": true,
-    "password": "$2b$10$rn3U6.krA4FpWHLqhzuRt./2NNftYhAiBY8bf9M.uhRcVdbJbDy4O"
+    "password": "$2b$10$qVhWYsx8Q6fXeielTEIrv.a70tKtagaDrHnO9Qx9zirbTuz9CABj."
   },
   "Kyla Lents": {
     "name": "Kyla Lents",
@@ -50,7 +50,7 @@
     "id": 4,
     "color": "#FFC0CB",
     "accent": true,
-    "password": "$2b$10$37rd3tmFnTrNNh29s1vkye5f9x.K6xR9Qa9Tf2Kv0Wz8bZTietNWu"
+    "password": "$2b$10$RRURSPVjgIxeXtoxYzzab.jWcN9NJsB58NvI/ckA1uA0Ze6xeCxkG"
   },
   "Marcus Johnson": {
     "name": "Marcus Johnson",
@@ -60,7 +60,7 @@
     "id": 5,
     "color": "#808080",
     "accent": true,
-    "password": "$2b$10$qLW4jN4FWyQjIe6uCgCVlufQaJ9SRx2zBOrJ9q47y6Ub6GHLKAKAS"
+    "password": "$2b$10$lgge0ArpZQLhuAI1ktih.OSBfOcHGKppEpBC88kjLW2kkhAhTjgLy"
   },
   "Miranda Gibson": {
     "name": "Miranda Gibson",
@@ -81,7 +81,7 @@
     "id": 7,
     "color": "#008000",
     "accent": true,
-    "password": "$2b$10$6KUck/K5dYLArpcVlFfKauRbw9/iO1qC7YVUiUtIgDTVp55BF3QO6"
+    "password": "$2b$10$utQv/XWz7V845XSJGAtaFutBARX.kYRtVuY2UkMvPXu9fhPSGt.QS"
   },
   "Sherman Magenta": {
     "name": "Sherman Magenta",
@@ -91,6 +91,6 @@
     "id": 8,
     "color": "#00FF00",
     "accent": true,
-    "password": "$2b$10$fHCTepeJSuaktaIIe4O6.OW4kLxc7dYTJSLbBK8VSSp5Yh.W6tO0e"
+    "password": "$2b$10$rmoD24zkUxHfJnHb4Z2Jae2JfjGzfbHZUuWMTMc2vplX7uifpq9jO"
   }
 }
