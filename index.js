@@ -149,7 +149,7 @@ io.of("voice").on("connection", (socket) => {
       };
     switched[socket.user.peerId].present = p;
     io.of(curr).emit("switched", switched);
-    socket.broadcast.emit("add person", [p, socket.user.peerId, true]);
+    if (!p) socket.broadcast.emit("remove person", [socket.user, true]);
   });
 
   socket.on("id", (id) => {
@@ -176,7 +176,11 @@ io.of("voice").on("connection", (socket) => {
     delete switched[socket.user.peerId];
     if (callList.includes(socket.user))
       callList.splice(callList.indexOf(socket.user), 1);
-    socket.broadcast.emit("remove person", socket.user);
+    socket.broadcast.emit("remove person", [socket.user, false]);
+    if (socket.user.present)
+      socket.broadcast.emit("remove person", [socket.user, true]);
+    socket.broadcast.emit("online", o);
+    socket.broadcast.emit("switched", switched);
     socket.broadcast.emit("online", o);
     socket.broadcast.emit("switched", switched);
   });
