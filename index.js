@@ -159,11 +159,10 @@ io.of("voice").on("connection", (socket) => {
       audio: socket.user.audio,
       id: socket.user.id,
     };
-    callList.push(socket.user);
-    socket.emit("call list", callList);
-    // socket.broadcast.emit("add person", socket.user);
-    io.of(curr).emit("switched", switched);
     socket.emit("user", socket.user);
+    socket.emit("call list", callList);
+    io.of(curr).emit("switched", switched);
+    callList.push(socket.user);
   });
 
   socket.on("chat message", (message) => {
@@ -175,7 +174,8 @@ io.of("voice").on("connection", (socket) => {
   socket.on("disconnect", () => {
     delete o[socket.user.id];
     delete switched[socket.user.peerId];
-    callList.splice(callList.indexOf(socket.user.peerId), 1);
+    if (callList.includes(socket.user))
+      callList.splice(callList.indexOf(socket.user), 1);
     socket.broadcast.emit("remove person", socket.user);
     socket.broadcast.emit("online", o);
     socket.broadcast.emit("switched", switched);
