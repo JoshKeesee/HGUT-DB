@@ -202,13 +202,14 @@ io.of("chat").on("connection", (socket) => {
   socket.emit("user", socket.user);
   const cr = {};
   const r = get("rooms") || {};
+	const nm = r[socket.user.room].messages.length;
   Object.keys(r).forEach((k) => {
     const v = r[k];
     if (socket.user.room == k) v.messages = v.messages.slice(-maxMessages);
     else delete v.messages;
     cr[k] = v;
   });
-  socket.emit("rooms", [cr, profiles]);
+  socket.emit("rooms", [cr, profiles, nm]);
   socket.emit("typing", typing[socket.user.room]);
   socket.emit("unread", socket.user.unread);
   io.of(curr).emit("online", o);
@@ -249,15 +250,49 @@ io.of("chat").on("connection", (socket) => {
     sendMessage(message, socket.user, curr);
   });
 
+	socket.on("edit", ({ id, message, profile, room }) => {
+		const user = profiles[profile];
+		if (!user) return;
+		const rooms = get("rooms");
+		const r = rooms[room];
+		if (!r) return;
+		const index = r.messages.findIndex((m, i) => i == id);
+		if (index == -1) return;
+		r.messages[index].message = message;
+		r.messages[index].edited = true;
+		set({ rooms });
+		io.of(curr).to(room).emit("edit", {
+			id,
+			message,
+			user,
+		});
+	});
+
+	socket.on("delete", ({ id, profile, room }) => {
+		const user = profiles[profile];
+		if (!user) return;
+		const rooms = get("rooms");
+		const r = rooms[room];
+		if (!r) return;
+		const index = r.messages.findIndex((m, i) => i == id);
+		if (index == -1) return;
+		r.messages.splice(index, 1);
+		set({ rooms });
+		io.of(curr).to(room).emit("delete", {
+			id,
+			user,
+		});
+	});
+
   socket.on("load messages", (lm) => {
     const rooms = get("rooms");
     const m = rooms[socket.user.room].messages;
     socket.emit(
       "load messages",
-      m.slice(
+      [m.slice(
         Math.max(0, m.length - lm - maxMessages),
         Math.max(0, m.length - lm)
-      )
+      ), m.length - lm - 1]
     );
   });
 
@@ -307,6 +342,7 @@ io.of("chat").on("connection", (socket) => {
       rooms[socket.user.room].messages.slice(-maxMessages),
       room,
       socket.user.unread,
+			rooms[socket.user.room].messages.length,
     ]);
   });
 });
@@ -376,9 +412,9 @@ const sendMessage = (message, us, curr, p = false) => {
     if (typing[us.room].includes(us.id) && !p)
       typing[us.room].splice(typing[us.room].indexOf(us.id), 1);
     if (!p) io.of(curr).to(us.room).emit("typing", typing[us.room]);
-		const m = [message, us, new Date(), lastMessage, rooms[us.room].allowed];
+		const m = [message, us, new Date(), lastMessage, rooms[us.room].allowed, rooms[us.room].messages.length - 1];
 		io.of(curr).emit("chat message", m);
-  } else io.of(curr).emit("chat message", [message, us, new Date(), lastMessage]);
+  } else io.of(curr).emit("chat message", [message, us, new Date(), lastMessage, rooms[us.room].messages.length]);
 };
 
 server.listen(3000, () => {
