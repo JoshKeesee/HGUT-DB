@@ -63,9 +63,21 @@ const setup = () => {
           messages: [],
           allowed: [2, 3, 4, 6],
         },
+				eth: {
+					name: '"Eth"',
+					messages: [],
+					allowed: "all",
+				},
       },
     });
   if (!get("users")) set({ users: {} });
+	const r = get("rooms");
+	if (!r["eth"]) r["eth"] = {
+		name: '"Eth"',
+		messages: [],
+		allowed: "all",
+	};
+	set("rooms", r);
   Object.keys(get("rooms")).forEach((k) => (typing[k] = []));
 };
 
@@ -104,8 +116,8 @@ io.of("voice").use(ioAuth);
 io.of("voice").on("connection", (socket) => {
   if (!socket.user) return socket.emit("redirect", "/login");
   const curr = "voice";
-  if (!online[curr]) online[curr] = {};
-  const o = online[curr];
+  if (!online) online = {};
+  const o = online;
   o[socket.user.id] = { visible: true, room: socket.user.room };
 
   io.of(curr).emit("online", o);
@@ -154,6 +166,7 @@ io.of("voice").on("connection", (socket) => {
   });
 
   socket.on("id", (id) => {
+		if (id == null) return;
     socket.user.peerId = id;
     switched[socket.user.peerId] = {
       camera: socket.user.camera,
@@ -194,8 +207,8 @@ io.of("chat").on("connection", (socket) => {
   users[socket.user.id] = socket.user;
   set({ users });
   const curr = "chat";
-  if (!online[curr]) online[curr] = {};
-  const o = online[curr];
+  if (!online) online = {};
+  const o = online;
   o[socket.user.id] = { visible: true, room: socket.user.room };
 
   socket.join(socket.user.room);
@@ -357,7 +370,7 @@ const upload = (file) => {
 };
 
 const sendMessage = (message, us, curr, p = false) => {
-  const o = online[curr];
+  const o = online;
   let isImage = false;
   if (!message) return;
   if (message.includes("data:")) {
