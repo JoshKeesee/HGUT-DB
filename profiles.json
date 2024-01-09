@@ -25,7 +25,7 @@
     "name": "Joshua Keesee",
     "character": "Chad Magenta",
     "dob": "Octember 32, 1942 IZ",
-    "profile": "profiles/Joshua Keesee.png",
+    "profile": "profiles/Joshua Keesee.jpeg",
     "id": 2,
     "color": "#FF00FF",
     "accent": false,
@@ -51,7 +51,7 @@
     "id": 4,
     "color": "#FFC0CB",
     "accent": true,
-    "password": "$2b$10$0ygrV6oCJ3i/jXMUseQJMeVD2m7xOCnSf9ztCgCJT0EXzKajZ2Bai"
+    "password": "$2b$10$9p1ShRKxNO8LiDgz631I/e84/SnX3I.u9ngqHnf0h0RPNcc/ZRu0K"
   },
   "Marcus Johnson": {
     "name": "Marcus Johnson",
@@ -61,7 +61,7 @@
     "id": 5,
     "color": "#808080",
     "accent": true,
-    "password": "$2b$10$/YbcGL8isS4VeTyn7gepG.7h9tUyJN.AI7BrbORaINw.L98A//2Nu"
+    "password": "$2b$10$M5C0955U3SNwLe5P7e44BuDK.2uCN845fasMSeReyRkrnr.qbDEUS"
   },
   "Miranda Gibson": {
     "name": "Miranda Gibson",
@@ -82,7 +82,7 @@
     "id": 7,
     "color": "#008000",
     "accent": true,
-    "password": "$2b$10$zMLUlvKaYXtSzc.jIX2mJuDVEu6bxAxSJRc/li0ie9hp1xiVVv75G"
+    "password": "$2b$10$k7wH7zrFAGeBFHwZlG8iT.GGHSWQMeXMW52O5V4eWNbyZKudeqTdm"
   },
   "Sherman Magenta": {
     "name": "Sherman Magenta",
@@ -92,6 +92,16 @@
     "id": 8,
     "color": "#00FF00",
     "accent": true,
-    "password": "$2b$10$ua0SorO5wj4DQZ60Th79guXf3ShC8w4JK/p83f20EVjBayG2SISrO"
+    "password": "$2b$10$SsxKqRx.AQNbBWzClStYPuNvcZOcWJlv.27xciena/UTDFlwPbuRC"
+  },
+  "Madison Cramer": {
+    "name": "Madison Cramer",
+    "character": "Madison Cramer",
+    "dob": "???",
+    "profile": "",
+    "id": 9,
+    "color": "#FF69B4",
+    "accent": true,
+    "password": "$2b$10$s.yFYdvNe6uNSC9e4HEC9OArTmCWszqunFz2ti0sXL49U1uCWXdKm"
   }
 }
