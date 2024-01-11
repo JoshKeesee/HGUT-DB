@@ -93,6 +93,12 @@ const setup = () => {
       messages: [],
       allowed: "all",
     };
+  if (!r["oldtimeycommunication"])
+    r["oldtimeycommunication"] = {
+      name: "Old Timey Communication",
+      messages: [],
+      allowed: [0, 1, 2, 3, 6, 8],
+    };
   set("rooms", r);
   Object.keys(get("rooms")).forEach((k) => (typing[k] = []));
 };
