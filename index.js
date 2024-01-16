@@ -51,7 +51,6 @@ fs.writeFileSync("profiles.json", JSON.stringify(profiles, null, 2));
 const ioAuth = require("./io-auth");
 const p = "./profiles";
 const im = "./images";
-const maxMessages = 50;
 const online = {},
   switched = {},
   typing = {},
@@ -97,7 +96,7 @@ const setup = () => {
     r["oldtimeycommunication"] = {
       name: "Old Timey Communication",
       messages: [],
-      allowed: [0, 1, 2, 3, 6, 8],
+      allowed: [0, 2, 3, 6, 8],
     };
   set("rooms", r);
   Object.keys(get("rooms")).forEach((k) => (typing[k] = []));
@@ -241,6 +240,8 @@ io.of("chat").on("connection", (socket) => {
   const o = online;
   o[socket.user.id] = { visible: true, room: socket.user.room };
 
+  let maxMessages = 50;
+
   socket.join(socket.user.room);
   socket.emit("user", socket.user);
   const cr = {};
@@ -257,7 +258,7 @@ io.of("chat").on("connection", (socket) => {
   socket.emit("unread", socket.user.unread);
   io.of(curr).emit("online", o);
 
-  socket.on("theme", (t) => (socket.user.theme = t));
+  socket.on("settings", (s) => (socket.user.settings = s));
   socket.on("visible", (v) => {
     if (!o[socket.user.id])
       o[socket.user.id] = { visible: true, room: socket.user.room };
@@ -423,7 +424,12 @@ const sendMessage = (message, us, curr, p = false) => {
     a.forEach((a) => {
       const u = users[a];
       if (!u) return;
-      if (subscriptions[u.id] && !o[u.id]?.visible) {
+      if (!u.settings) u.settings = {};
+      if (
+        subscriptions[u.id] &&
+        !o[u.id]?.visible &&
+        u.settings.notifications
+      ) {
         const n = rooms[us.room].name;
         const payload = JSON.stringify({
           title: `${us.name}${!rooms[n] ? " in " + n : ""}`,
