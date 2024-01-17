@@ -300,7 +300,7 @@ io.of("chat").on("connection", (socket) => {
     const rooms = get("rooms");
     const r = rooms[room];
     if (!r) return;
-    const index = r.messages.findIndex((m, i) => i == id);
+    const index = r.messages.length - id - 1;
     if (index == -1) return;
     r.messages[index].message = message;
     r.messages[index].edited = true;
@@ -310,6 +310,31 @@ io.of("chat").on("connection", (socket) => {
       message,
       user,
     });
+  });
+
+  socket.on("reply", ({ id, message, profile, room }) => {
+    const user = fp[profile];
+    if (!user) return;
+    const rooms = get("rooms");
+    const r = rooms[room];
+    if (!r) return;
+    const index = r.messages.length - id - 1;
+    if (index == -1) return;
+    if (!r.messages[index].replies) r.messages[index].replies = [];
+    r.messages[index].replies.push({
+      message,
+      name: user.name,
+      date: new Date(),
+    });
+    set({ rooms });
+    io.of(curr)
+      .to(room)
+      .emit("reply", {
+        id,
+        message,
+        user,
+        prev: r.messages[index].replies[r.messages[index].replies.length - 1],
+      });
   });
 
   socket.on("delete", ({ id, profile, room }) => {
