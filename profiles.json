@@ -46,7 +46,7 @@
     "profile": "",
     "id": 4,
     "color": "#FFC0CB",
-    "password": "$2b$10$GegTM7xXg6WfdwwLgRzdNuDWxpr/oUWlI7IUwb6vs36rrLYTr8w4a"
+    "password": "$2b$10$DOUIAdeuuVR9IgT/WqV1keSwRLY7TpMkDBEoDHYzb0oLJLUVy6hgu"
   },
   "Marcus Johnson": {
     "name": "Marcus Johnson",
@@ -55,7 +55,7 @@
     "profile": "",
     "id": 5,
     "color": "#808080",
-    "password": "$2b$10$naI9V.hh0IeuHwBpQXmzO.iig7D0AuJHAyEls9pBb7oXyGbo3XCey"
+    "password": "$2b$10$Zq29GPAutup5FgD6fiIEM.fWg6KrGLZZmPs0OJTkSF3RKP6STLkCi"
   },
   "Miranda Gibson": {
     "name": "Miranda Gibson",
@@ -74,7 +74,7 @@
     "profile": "",
     "id": 7,
     "color": "#008000",
-    "password": "$2b$10$FNnQ71wv0O.jlgWm9MH8teRKNq3cYz7iwJs7uU4ba9lUUU9dyHKDu"
+    "password": "$2b$10$L.jMBGeN/sPtBUDN1DBVRu9Xs3ncfleSp/lYdtRq4aWkLlgIqa12m"
   },
   "Sherman Magenta": {
     "name": "Sherman Magenta",
@@ -83,7 +83,7 @@
     "profile": "profiles/Sherman Magenta.webp",
     "id": 8,
     "color": "#00FF00",
-    "password": "$2b$10$LWCW3RUiOUwHjTjNoh.p6ehKjQVNy4oAwlAQxJratGG0KTOocfzxu"
+    "password": "$2b$10$F.RmmLG8wYieZHtugakf6.G6M460NHkOm4tq5/iIIosNzPViP3I5C"
   },
   "Madison Cramer": {
     "name": "Madison Cramer",
@@ -92,6 +92,6 @@
     "profile": "",
     "id": 9,
     "color": "#FF69B4",
-    "password": "$2b$10$xVvgdNI3krBxyQq/XM3gTO7M7xrQrBSDUesohv/PTJpTfJjYJiLw."
+    "password": "$2b$10$9r5mM0xy4LA2ShuZkI23PuuytKnpo3kNHGatMeqpifQrjB.ot7Yde"
   }
 }

@@ -259,6 +259,19 @@ io.of("chat").on("connection", (socket) => {
   io.of(curr).emit("online", o);
 
   socket.on("settings", (s) => (socket.user.settings = s));
+  socket.on("profile", (file, cb) => {
+    if (!file.startsWith("data:")) return;
+    const ext = file.split(";")[0].split("/")[1];
+    const name = "profiles/" + socket.user.name + "." + ext;
+    fs.writeFileSync(name, Buffer.from(file.split(",")[1], "base64"));
+    if (fs.existsSync(socket.user.profile)) fs.unlinkSync(socket.user.profile);
+    socket.user.profile = name;
+    const p = fs.readFileSync("./profiles.json");
+    const profiles = JSON.parse(p);
+    profiles[socket.user.name].profile = name;
+    fs.writeFileSync("./profiles.json", JSON.stringify(profiles, null, 2));
+    cb(socket.user.profile);
+  });
   socket.on("visible", (v) => {
     if (!o[socket.user.id])
       o[socket.user.id] = { visible: true, room: socket.user.room };
