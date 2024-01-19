@@ -109,6 +109,25 @@ const updateMessageIds = () => {
   set({ rooms: r });
 };
 
+const getAllowedFiles = (u) => {
+  const r = get("rooms");
+  const a = Object.keys(r).filter(
+    (k) => r[k].allowed == "all" || r[k].allowed.includes(u.id),
+  );
+  const files = [];
+  a.forEach((k) => {
+    r[k].messages.forEach((m) => {
+      if (m.message.startsWith("/images/"))
+        files.push({
+          name: m.message.replace("/images/", ""),
+          url: m.message.replace("/images/", "images/"),
+          room: k,
+        });
+    });
+  });
+  return [...new Set(files)];
+};
+
 setup();
 
 app.use(express.urlencoded({ extended: true }));
@@ -335,17 +354,15 @@ io.of("chat").on("connection", (socket) => {
     const rooms = get("rooms");
     const r = rooms[room];
     if (!r) return;
-    const index = r.messages.length - id - 1;
-    if (index == -1) return;
-    if (!r.messages[index].replies) r.messages[index].replies = [];
+    if (!r.messages[id].replies) r.messages[id].replies = [];
     const date = new Date();
-    r.messages[index].replies.push({
+    r.messages[id].replies.push({
       message,
       name: user.name,
       date,
     });
     set({ rooms });
-    const i = r.messages[index].replies.length - 1;
+    const i = r.messages[id].replies.length - 1;
     io.of(curr)
       .to(room)
       .emit("reply", {
@@ -353,7 +370,7 @@ io.of("chat").on("connection", (socket) => {
         message,
         user,
         date,
-        prev: r.messages[index].replies[i - 1],
+        prev: r.messages[id].replies[i - 1],
         i,
       });
   });
@@ -368,6 +385,11 @@ io.of("chat").on("connection", (socket) => {
     set({ rooms });
     updateMessageIds();
     io.of(curr).to(room).emit("delete", { id });
+  });
+
+  socket.on("files", (cb) => {
+    const files = getAllowedFiles(socket.user);
+    cb(files);
   });
 
   socket.on("load messages", (lm) => {
