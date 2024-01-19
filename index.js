@@ -99,7 +99,14 @@ const setup = () => {
       allowed: [0, 2, 3, 6, 8],
     };
   set("rooms", r);
+  updateMessageIds();
   Object.keys(get("rooms")).forEach((k) => (typing[k] = []));
+};
+
+const updateMessageIds = () => {
+  const r = get("rooms");
+  Object.keys(r).forEach((k) => r[k].messages.forEach((m, i) => (m.id = i)));
+  set({ rooms: r });
 };
 
 setup();
@@ -253,7 +260,7 @@ io.of("chat").on("connection", (socket) => {
     cr[k] = v;
   });
   socket.emit("rooms", [cr, fp]);
-  socket.emit("load messages", [m, m.length - 1, false]);
+  socket.emit("load messages", [m, false]);
   socket.emit("typing", typing[socket.user.room]);
   socket.emit("unread", socket.user.unread);
   io.of(curr).emit("online", o);
@@ -313,15 +320,12 @@ io.of("chat").on("connection", (socket) => {
     const rooms = get("rooms");
     const r = rooms[room];
     if (!r) return;
-    const index = r.messages.length - id - 1;
-    if (index == -1) return;
-    r.messages[index].message = message;
-    r.messages[index].edited = true;
+    r.messages[id].message = message;
+    r.messages[id].edited = true;
     set({ rooms });
     io.of(curr).to(room).emit("edit", {
       id,
       message,
-      user,
     });
   });
 
@@ -334,19 +338,23 @@ io.of("chat").on("connection", (socket) => {
     const index = r.messages.length - id - 1;
     if (index == -1) return;
     if (!r.messages[index].replies) r.messages[index].replies = [];
+    const date = new Date();
     r.messages[index].replies.push({
       message,
       name: user.name,
-      date: new Date(),
+      date,
     });
     set({ rooms });
+    const i = r.messages[index].replies.length - 1;
     io.of(curr)
       .to(room)
       .emit("reply", {
         id,
         message,
         user,
-        prev: r.messages[index].replies[r.messages[index].replies.length - 1],
+        date,
+        prev: r.messages[index].replies[i - 1],
+        i,
       });
   });
 
@@ -356,14 +364,10 @@ io.of("chat").on("connection", (socket) => {
     const rooms = get("rooms");
     const r = rooms[room];
     if (!r) return;
-    const index = r.messages.findIndex((m, i) => i == id);
-    if (index == -1) return;
-    r.messages.splice(index, 1);
+    r.messages.splice(id, 1);
     set({ rooms });
-    io.of(curr).to(room).emit("delete", {
-      id,
-      user,
-    });
+    updateMessageIds();
+    io.of(curr).to(room).emit("delete", { id });
   });
 
   socket.on("load messages", (lm) => {
@@ -374,7 +378,6 @@ io.of("chat").on("connection", (socket) => {
         Math.max(0, m.length - lm - maxMessages),
         Math.max(0, m.length - lm),
       ),
-      m.length - lm - 1,
     ]);
   });
 
@@ -424,7 +427,6 @@ io.of("chat").on("connection", (socket) => {
       rooms[socket.user.room].messages.slice(-maxMessages),
       room,
       socket.user.unread,
-      rooms[socket.user.room].messages.length,
     ]);
   });
 });
@@ -451,7 +453,12 @@ const sendMessage = (message, us, curr, p = false) => {
   const lastMessage =
     rooms[us.room].messages[rooms[us.room].messages.length - 1];
   if (curr == "chat") {
-    rooms[us.room].messages.push({ message, name: us.name, date: new Date() });
+    rooms[us.room].messages.push({
+      message,
+      name: us.name,
+      date: new Date(),
+      id: rooms[us.room].messages.length,
+    });
     set({ rooms });
     const users = get("users") || {};
     const subscriptions = get("subscriptions") || {};
@@ -514,7 +521,8 @@ const sendMessage = (message, us, curr, p = false) => {
       us,
       new Date(),
       lastMessage,
-      rooms[us.room].messages.length,
+      rooms[us.room].allowed,
+      0,
     ]);
 };
 
