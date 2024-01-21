@@ -142,8 +142,7 @@ app.post("/subscribe", (req, res) => {
   const subscriptions = get("subscriptions") || {};
   const s = req.body.subscription;
   if (!subscriptions[user.id]) subscriptions[user.id] = {};
-  if (req.body.mobile) subscriptions[user.id].mobile = s;
-  else subscriptions[user.id].web = s;
+  subscriptions[user.id][req.body.deviceId] = s;
   set({ subscriptions });
   res.status(201).json({});
 });
@@ -491,12 +490,7 @@ const sendMessage = (message, us, curr, p = false) => {
     a.forEach((a) => {
       const u = users[a];
       if (!u) return;
-      if (!u.settings) u.settings = {};
-      if (
-        subscriptions[u.id] &&
-        !o[u.id]?.visible &&
-        u.settings.notifications
-      ) {
+      if (subscriptions[u.id] && !o[u.id]?.visible) {
         const n = rooms[us.room].name;
         const payload = JSON.stringify({
           title: `${us.name}${!rooms[n] ? " in " + n : ""}`,
@@ -512,9 +506,11 @@ const sendMessage = (message, us, curr, p = false) => {
             },
           ],
         });
-        if (!Object.keys(subscriptions[u.id]).length) return;
-        Object.values(subscriptions[u.id]).forEach((e) => {
-          webpush.sendNotification(e, payload).catch((e) => {});
+        Object.keys(subscriptions[u.id]).forEach((k) => {
+          const e = subscriptions[u.id][k];
+          if (!e) return;
+          if (u.settings.notifications[k])
+            webpush.sendNotification(e, payload).catch((e) => {});
         });
       }
       if (!o[u.id] || u.id == us.id || u.room == us.room) return;
