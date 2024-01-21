@@ -12,7 +12,7 @@ module.exports = (socket, next) => {
     const u = users[profiles[username].id] || {};
     socket.user = {
       ...profiles[username],
-      room: r[u.room] ? u.room : Object.keys(r)[0],
+      room: r[u.room] ? u.room : "main",
       unread: u.unread?.length > 0 ? u.unread : [],
       settings:
         typeof u.settings != "undefined"
@@ -27,6 +27,8 @@ module.exports = (socket, next) => {
       camera: false,
       audio: false,
     };
+    if (r[u.room].allowed != "all" && r[u.room].allowed.includes(u.id))
+      socket.user.room = "main";
   }
   next();
 };
