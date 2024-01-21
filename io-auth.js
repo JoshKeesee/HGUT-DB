@@ -29,7 +29,7 @@ module.exports = (socket, next) => {
     };
     if (typeof socket.user.notifications == "boolean")
       socket.user.notifications = {};
-    if (r[u.room].allowed != "all" && r[u.room].allowed.includes(u.id))
+    if (r[u.room].allowed != "all" && !r[u.room].allowed.includes(u.id))
       socket.user.room = "main";
   }
   next();
