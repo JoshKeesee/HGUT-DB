@@ -48,6 +48,10 @@ const filterProfiles = () => {
 };
 const fp = filterProfiles();
 fs.writeFileSync("profiles.json", JSON.stringify(profiles, null, 2));
+const notificationSounds = [];
+fs.readdirSync("./notification").forEach((f) =>
+  notificationSounds.push(f.split(".")[0]),
+);
 const ioAuth = require("./io-auth");
 const p = "./profiles";
 const im = "./images";
@@ -331,6 +335,8 @@ io.of("chat").on("connection", (socket) => {
   socket.on("chat message", (message) => {
     sendMessage(message, socket.user, curr);
   });
+
+  socket.on("get sounds", (cb) => cb(notificationSounds));
 
   socket.on("edit", ({ id, message, profile, room }) => {
     const user = fp[profile];

@@ -10,25 +10,27 @@ module.exports = (socket, next) => {
     const users = get("users") || {};
     const r = get("rooms") || {};
     const u = users[profiles[username].id] || {};
+    const defaultSettings = {
+      theme: false,
+      accent: true,
+      emoji: true,
+      notifications: {},
+      notificationSound: "Bounce",
+      dontDisturb: false,
+    };
     socket.user = {
       ...profiles[username],
       room: r[u.room] ? u.room : "main",
       unread: u.unread?.length > 0 ? u.unread : [],
-      settings:
-        typeof u.settings != "undefined"
-          ? u.settings
-          : {
-              theme: false,
-              accent: true,
-              emoji: true,
-              notifications: {},
-            },
+      settings: typeof u.settings != "undefined" ? u.settings : defaultSettings,
       menu: typeof u.menu != "undefined" ? u.menu : true,
       camera: false,
       audio: false,
     };
-    if (typeof socket.user.settings.notifications == "boolean")
-      socket.user.settings.notifications = {};
+    Object.keys(defaultSettings).forEach((k) => {
+      if (typeof socket.user.settings[k] != typeof defaultSettings[k])
+        socket.user.settings[k] = defaultSettings[k];
+    });
     if (r[u.room].allowed != "all" && !r[u.room].allowed.includes(u.id))
       socket.user.room = "main";
   }
