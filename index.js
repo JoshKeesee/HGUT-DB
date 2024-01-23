@@ -450,6 +450,14 @@ io.of("chat").on("connection", (socket) => {
       socket.user.unread,
     ]);
   });
+
+  socket.on("note start", (note) => {
+    socket.broadcast.emit("note start", [note, socket.user]);
+  });
+
+  socket.on("note stop", (note) => {
+    socket.broadcast.emit("note stop", [note, socket.user]);
+  });
 });
 
 const upload = (file) => {
