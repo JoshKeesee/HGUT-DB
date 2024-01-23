@@ -48,10 +48,8 @@ const filterProfiles = () => {
 };
 const fp = filterProfiles();
 fs.writeFileSync("profiles.json", JSON.stringify(profiles, null, 2));
-const notificationSounds = [];
-fs.readdirSync("./notification").forEach((f) =>
-  notificationSounds.push(f.split(".")[0]),
-);
+const sounds = [];
+fs.readdirSync("./sounds").forEach((f) => sounds.push(f.split(".")[0]));
 const ioAuth = require("./io-auth");
 const p = "./profiles";
 const im = "./images";
@@ -140,6 +138,7 @@ app.use(express.static(__dirname + "/public"));
 app.use(cors());
 app.use("/profiles", express.static(__dirname + "/profiles"));
 app.use("/images", express.static(__dirname + "/images"));
+app.use("/sounds", express.static(__dirname + "/sounds"));
 app.post("/subscribe", (req, res) => {
   const user = fp[req.body.user];
   if (!user) return res.status(201).json({});
@@ -336,7 +335,7 @@ io.of("chat").on("connection", (socket) => {
     sendMessage(message, socket.user, curr);
   });
 
-  socket.on("get sounds", (cb) => cb(notificationSounds));
+  socket.on("get sounds", (cb) => cb(sounds));
 
   socket.on("edit", ({ id, message, profile, room }) => {
     const user = fp[profile];
@@ -390,6 +389,26 @@ io.of("chat").on("connection", (socket) => {
     set({ rooms });
     updateMessageIds();
     io.of(curr).to(room).emit("delete", { id });
+  });
+
+  socket.on("react", ({ id, profile, room, type }) => {
+    const rooms = get("rooms");
+    const r = rooms[room];
+    if (!r) return;
+    if (!r.messages[id].reactions) r.messages[id].reactions = [];
+    r.messages[id].reactions.push({
+      id: socket.user.id,
+      name: socket.user.name,
+      type,
+    });
+    set({ rooms });
+    io.of(curr).to(room).emit("react", {
+      id,
+      user: socket.user,
+      message: r.messages[id],
+      type,
+      reactions: r.messages[id].reactions,
+    });
   });
 
   socket.on("files", (cb) => {
