@@ -567,14 +567,7 @@ const sendMessage = (message, us, curr, p = false) => {
     ];
     io.of(curr).emit("chat message", m);
   } else
-    io.of(curr).emit("chat message", [
-      message,
-      us,
-      new Date(),
-      lastMessage,
-      rooms[us.room].allowed,
-      0,
-    ]);
+    io.of(curr).emit("chat message", [message, us, new Date(), lastMessage, 0]);
 };
 
 server.listen(3000, () => {
