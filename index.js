@@ -362,7 +362,7 @@ io.of("chat").on("connection", (socket) => {
     const date = new Date();
     r.messages[id].replies.push({
       message,
-      name: user.name,
+      name: socket.user.name,
       date,
     });
     set({ rooms });
