@@ -46,7 +46,7 @@
     "profile": "",
     "id": 4,
     "color": "#FFC0CB",
-    "password": "$2b$10$xsNY1zXwoyW7EjyXe3WMTegYN6fBiCF57RnDtuWO0tmkF1IYYELSG"
+    "password": "$2b$10$vaoF5clHX1NdbvxcG.f2D.RuFbL.BiuBHlhH.s/Tj1pthCymTvyWO"
   },
   "Marcus Johnson": {
     "name": "Marcus Johnson",
@@ -55,13 +55,13 @@
     "profile": "",
     "id": 5,
     "color": "#808080",
-    "password": "$2b$10$r0SAuXVmoULoJXJhuzR4.uZhQ/Fk1VdxO9M0eCeIHSjzwFD6rrxDa"
+    "password": "$2b$10$iQZQ/dJwb3/xAVUGxIcjZeujlkLW2McHQZLNakVgEnKA/egGdbjlq"
   },
   "Miranda Gibson": {
     "name": "Miranda Gibson",
     "character": "Dr. Prof. Gen. Sherman The Great XIII Esq.",
     "dob": "March 14, 450 PS",
-    "profile": "profiles/Miranda Gibson.webp",
+    "profile": "profiles/Miranda Gibson.jpeg",
     "id": 6,
     "color": "#0000FF",
     "password": "$2b$10$04xRlQ7suEzvIpHZnIoRMO2b1JvT7.deWEOXXPLnLHXgUgG2G44c.",
@@ -74,7 +74,7 @@
     "profile": "",
     "id": 7,
     "color": "#008000",
-    "password": "$2b$10$nhK9lb9Xm3NBO7g4adoXuufJ0Zq1nZndt4DASilw07bgSI14HDBbm"
+    "password": "$2b$10$gIxpZwLW64sEv.omV7PmBu9LDohtbhxgCOj3GjiWQOVpT2LbePn5q"
   },
   "Sherman Magenta": {
     "name": "Sherman Magenta",
@@ -83,7 +83,7 @@
     "profile": "profiles/Sherman Magenta.webp",
     "id": 8,
     "color": "#00FF00",
-    "password": "$2b$10$HFNM5zLyXxe/afLUHTI4QO4HmNO.vtCUYLwUQ87yeJPr.PMCeV7CO"
+    "password": "$2b$10$FSb6nNdArz5K34svh/kZ9.r7Y1dVDHzlc1hQdq3Y3U4W4VAquMUjS"
   },
   "Madison Cramer": {
     "name": "Madison Cramer",
@@ -92,6 +92,6 @@
     "profile": "",
     "id": 9,
     "color": "#FF69B4",
-    "password": "$2b$10$cT0.CzjtllukJqx/J137X.vuzHm9G8kMiSXeH0WtgL7sqjomDFqli"
+    "password": "$2b$10$hhntyKxRMSXogD35sb0LguejtBrNUuB2db8VqJI1MT5t4AdK4nXAi"
   }
 }

@@ -298,6 +298,9 @@ io.of("chat").on("connection", (socket) => {
     const profiles = JSON.parse(p);
     profiles[socket.user.name].profile = name;
     fs.writeFileSync("./profiles.json", JSON.stringify(profiles, null, 2));
+    const users = get("users") || {};
+    users[socket.user.id] = socket.user;
+    set({ users });
     cb(socket.user.profile);
   });
   socket.on("visible", (v) => {
