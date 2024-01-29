@@ -166,6 +166,12 @@ app.post("/p", (req, res) => {
   if (r.accessCode) ret.accessCode = accessCode;
   res.json(ret);
 });
+app.post("/get-user", (req, res) => {
+  const users = get("users");
+  const u = users[req.body.user];
+  if (!u) return res.status(201).json({ error: true });
+  res.status(201).json(u);
+});
 
 io.of("chat").use(ioAuth);
 io.of("voice").use(ioAuth);
