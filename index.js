@@ -170,7 +170,7 @@ app.post("/p", (req, res) => {
 app.post("/user-data", (req, res) => {
   const users = get("users");
   const u = users[req.body.user];
-  if (!u) return rest.status(201).json({ error: true });
+  if (!u) return res.status(201).json({ error: true });
   const cr = {};
   const r = get("rooms") || {};
   const m = structuredClone(r[u.room].messages).slice(-maxMessages);
