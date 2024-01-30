@@ -33,7 +33,7 @@
     "name": "Abigail Pomicter",
     "character": "Clementine Favila",
     "dob": "August 13, 1994 IZ",
-    "profile": "profiles/Abigail Pomicter.png",
+    "profile": "profiles/Abigail Pomicter.jpeg",
     "id": 3,
     "color": "#800080",
     "password": "$2b$10$m84paVnZHGHotkoZBuFSV.UPIAfy/JMfrBzy2O4io/DPKKCUbOBoO",
@@ -46,7 +46,7 @@
     "profile": "",
     "id": 4,
     "color": "#FFC0CB",
-    "password": "$2b$10$U1RlGvio9RRvWeTszX/qwOQoxWlzdNrVGMmpEDneiq7h28mOQ.Ip6"
+    "password": "$2b$10$upraDL2B2nKYNUnuaXp89ecqJGa.NgvOJuvvxJIwWmkOWEPKCUEoC"
   },
   "Marcus Johnson": {
     "name": "Marcus Johnson",
@@ -55,7 +55,7 @@
     "profile": "",
     "id": 5,
     "color": "#808080",
-    "password": "$2b$10$mQG0S7JwmEIeUp3RrL9IeeORohiI/7P8paySM0jRKDVJoxHRamXCG"
+    "password": "$2b$10$WeeWTSmsOnZkJTSONDgZsuNLLnh5Oi2VUpESjygrqGTEy2/js4GDy"
   },
   "Miranda Gibson": {
     "name": "Miranda Gibson",
@@ -74,7 +74,7 @@
     "profile": "",
     "id": 7,
     "color": "#008000",
-    "password": "$2b$10$H7hPreAL3qhrP/WYNgvizu0evWEC5nBOevBFO27LxXZl.P1ob.SV6"
+    "password": "$2b$10$vs5lRsssNjnGafafgUN32ebz11oONAgFgalQUOA3/YY3Iz5dNXEam"
   },
   "Sherman Magenta": {
     "name": "Sherman Magenta",
@@ -83,7 +83,7 @@
     "profile": "profiles/Sherman Magenta.webp",
     "id": 8,
     "color": "#00FF00",
-    "password": "$2b$10$n71.pV8dqsZYuMoEt2bib.efJOjGTIGkYbgAM2Rt0TcEWfxvD0LdS"
+    "password": "$2b$10$mq99170WMMlG1Rczw9kv6eq8hl4YCtje4SQZLEw.NgTA6afdqJolm"
   },
   "Madison Cramer": {
     "name": "Madison Cramer",
@@ -92,6 +92,6 @@
     "profile": "",
     "id": 9,
     "color": "#FF69B4",
-    "password": "$2b$10$LrzRdJ42vb0ihG.rlDJr.ORf72gdxomsoL0x7KXAPHXAwJi2yqFvq"
+    "password": "$2b$10$EN7/2JuWZOgrrSTN8ZC3felH3U4l5QetlPHAseF8ZLlmwhZ1sSlvi"
   }
 }

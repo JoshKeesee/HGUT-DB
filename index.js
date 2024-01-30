@@ -56,7 +56,8 @@ const im = "./images";
 const online = {},
   switched = {},
   typing = {},
-  callList = [];
+  callList = [],
+  maxMessages = 50;
 
 const setup = () => {
   if (!fs.existsSync(p)) fs.mkdirSync(p);
@@ -166,11 +167,24 @@ app.post("/p", (req, res) => {
   if (r.accessCode) ret.accessCode = accessCode;
   res.json(ret);
 });
-app.post("/get-user", (req, res) => {
+app.post("/user-data", (req, res) => {
   const users = get("users");
   const u = users[req.body.user];
-  if (!u) return res.status(201).json({ error: true });
-  res.status(201).json(u);
+  if (!u) return rest.status(201).json({ error: true });
+  const cr = {};
+  const r = get("rooms") || {};
+  const m = structuredClone(r[u.room].messages).slice(-maxMessages);
+  Object.keys(r).forEach((k) => {
+    const v = r[k];
+    delete v.messages;
+    if (v.allowed == "all" || v.allowed.includes(u.id)) cr[k] = v;
+  });
+  res.status(201).json({
+    user: u,
+    profiles: fp,
+    rooms: cr,
+    messages: m,
+  });
 });
 
 io.of("chat").use(ioAuth);
@@ -274,20 +288,7 @@ io.of("chat").on("connection", (socket) => {
   const o = online;
   o[socket.user.id] = { visible: true, room: socket.user.room };
 
-  let maxMessages = 50;
-
   socket.join(socket.user.room);
-  socket.emit("user", socket.user);
-  const cr = {};
-  const r = get("rooms") || {};
-  const m = structuredClone(r[socket.user.room].messages).slice(-maxMessages);
-  Object.keys(r).forEach((k) => {
-    const v = r[k];
-    delete v.messages;
-    cr[k] = v;
-  });
-  socket.emit("rooms", [cr, fp]);
-  socket.emit("load messages", [m, false]);
   socket.emit("typing", typing[socket.user.room]);
   socket.emit("unread", socket.user.unread);
   io.of(curr).emit("online", o);
@@ -556,10 +557,7 @@ const sendMessage = (message, us, curr, p = false) => {
         });
       }
       if (!o[u.id] || u.id == us.id || u.room == us.room) return;
-      if (!u.unread) u.unread = [];
-      if (!u.unread.includes(us.room)) {
-        u.unread.push(us.room);
-      }
+      if (!u.unread.includes(us.room)) u.unread.push(us.room);
       io.of(curr).to(u.sid).emit("unread", u.unread);
     });
     set({ users });

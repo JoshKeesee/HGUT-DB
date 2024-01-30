@@ -21,7 +21,7 @@ module.exports = (socket, next) => {
     socket.user = {
       ...profiles[username],
       room: r[u.room] ? u.room : "main",
-      unread: u.unread?.length > 0 ? u.unread : [],
+      unread: typeof u.unread == "object" ? u.unread : [],
       settings: typeof u.settings != "undefined" ? u.settings : defaultSettings,
       menu: typeof u.menu != "undefined" ? u.menu : true,
       camera: false,
