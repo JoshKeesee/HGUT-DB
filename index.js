@@ -173,7 +173,6 @@ app.post("/user-data", (req, res) => {
   if (!u) return res.status(201).json({ error: true });
   const cr = {};
   const r = get("rooms") || {};
-  const m = structuredClone(r[u.room].messages).slice(-maxMessages);
   Object.keys(r).forEach((k) => {
     const v = r[k];
     delete v.messages;
@@ -183,7 +182,6 @@ app.post("/user-data", (req, res) => {
     user: u,
     profiles: fp,
     rooms: cr,
-    messages: m,
   });
 });
 
@@ -261,6 +259,10 @@ io.of("voice").on("connection", (socket) => {
     sendMessage(message, socket.user, curr);
   });
 
+  socket.on("react emoji", (e) => {
+    socket.broadcast.emit("react emoji", [e, socket.user.name]);
+  });
+
   socket.on("get switched", (cb) => cb(switched));
 
   socket.on("disconnect", () => {
@@ -290,6 +292,9 @@ io.of("chat").on("connection", (socket) => {
   o[socket.user.id] = { visible: true, room: socket.user.room };
 
   socket.join(socket.user.room);
+  const r = get("rooms") || {};
+  const m = structuredClone(r[socket.user.room].messages).slice(-maxMessages);
+  socket.emit("load messages", [m, false]);
   socket.emit("typing", typing[socket.user.room]);
   socket.emit("unread", socket.user.unread);
   io.of(curr).emit("online", o);
