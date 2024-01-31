@@ -171,6 +171,9 @@ app.post("/user-data", (req, res) => {
   const users = get("users");
   const u = users[req.body.user];
   if (!u) return res.status(201).json({ error: true });
+  Object.keys(profiles[u.name]).forEach((k) => {
+    if (!u[k]) u[k] = profiles[u.name][k];
+  });
   const cr = {};
   const r = get("rooms") || {};
   Object.keys(r).forEach((k) => {
