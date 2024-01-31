@@ -198,6 +198,7 @@ io.of("voice").on("connection", (socket) => {
   o[socket.user.id] = { visible: true, room: socket.user.room };
 
   io.of(curr).emit("online", o);
+  socket.broadcast.emit("person joined", socket.user);
   socket.emit("profiles", fp);
 
   socket.on("theme", (t) => (socket.user.theme = t));
@@ -292,6 +293,7 @@ io.of("chat").on("connection", (socket) => {
   socket.emit("typing", typing[socket.user.room]);
   socket.emit("unread", socket.user.unread);
   io.of(curr).emit("online", o);
+  socket.broadcast.emit("person joined", socket.user);
 
   socket.on("settings", (s) => (socket.user.settings = s));
   socket.on("profile", (file, cb) => {
@@ -437,7 +439,7 @@ io.of("chat").on("connection", (socket) => {
     ]);
   });
 
-  socket.on("join room", (room, cb) => {
+  socket.on("join room", (room) => {
     const rooms = get("rooms");
     if (!rooms[room]) {
       const u = room.split("-").map((e) => Number(e));
