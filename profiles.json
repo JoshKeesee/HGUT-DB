@@ -16,9 +16,7 @@
     "profile": "profiles/Liam Keesee.jpeg",
     "id": 1,
     "color": "#FFA500",
-    "emojis": [
-      "💖"
-    ],
+    "emojis": ["💖"],
     "password": "$2b$10$2J0uCp7RcmDNRg6MWERB1ewpLHgJaAh7n0f01qHJyofajlIv1AoYi",
     "hasPassword": true
   },
@@ -29,9 +27,6 @@
     "profile": "profiles/Joshua Keesee.jpeg",
     "id": 2,
     "color": "#FF00FF",
-    "emojis": [
-      "🤣"
-    ],
     "password": "$2b$10$k92D8oYNX8UCQV29CW.JpOBY6.7JvTUS/RpwUfvV7rawE1e4Pm9Ly",
     "hasPassword": true
   },
