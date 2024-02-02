@@ -9,6 +9,7 @@ const io = require("socket.io")(server, {
   },
 });
 const { get, set } = require("./db");
+const checkUser = require("./check-user");
 const fs = require("fs");
 const dotenv = require("dotenv");
 dotenv.config();
@@ -30,7 +31,7 @@ Object.keys(profiles).forEach((p) => {
     profiles[p].password = bcrypt.hashSync(profiles[p].setPassword, 10);
     delete profiles[p].setPassword;
     profiles[p].hasPassword = true;
-  } else if (!profiles[p].hasPassword)
+  } else if (!profiles[p].password)
     profiles[p].password = bcrypt.hashSync("password", 10);
 });
 const filterProfiles = () => {
@@ -168,12 +169,11 @@ app.post("/p", (req, res) => {
   res.json(ret);
 });
 app.post("/user-data", (req, res) => {
-  const users = get("users");
-  const u = users[req.body.user];
+  const id =
+    profiles[Object.keys(profiles).find((k) => profiles[k].id == req.body.user)]
+      .name;
+  const u = checkUser(id);
   if (!u) return res.status(201).json({ error: true });
-  Object.keys(profiles[u.name]).forEach((k) => {
-    if (!u[k]) u[k] = profiles[u.name][k];
-  });
   const cr = {};
   const r = get("rooms") || {};
   Object.keys(r).forEach((k) => {
