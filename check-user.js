@@ -30,7 +30,7 @@ module.exports = (username) => {
     if (typeof user.settings[k] != typeof defaultSettings[k])
       user.settings[k] = defaultSettings[k];
   });
-  if (r[u.room].allowed != "all" && !r[u.room].allowed.includes(u.id))
+  if (r[u.room]?.allowed != "all" && !r[u.room]?.allowed.includes(u.id))
     user.room = "main";
   return user;
 };

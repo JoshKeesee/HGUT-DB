@@ -3,3 +3,5 @@ replit.nix
 .env
 .codesandbox
 .devcontainer
+node_modules
+images
