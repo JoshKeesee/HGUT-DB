@@ -562,7 +562,7 @@ const sendMessage = (message, us, curr, p = false) => {
         Object.keys(subscriptions[u.id]).forEach((k) => {
           const e = subscriptions[u.id][k];
           if (!e) return;
-          if (u.settings.notifications[k])
+          if (u.settings?.notifications[k])
             webpush.sendNotification(e, payload).catch((e) => {});
         });
       }
