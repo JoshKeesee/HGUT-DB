@@ -5,3 +5,4 @@ replit.nix
 .devcontainer
 node_modules
 images
+.github
