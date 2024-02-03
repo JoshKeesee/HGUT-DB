@@ -17,7 +17,9 @@
     "id": 1,
     "color": "#FFA500",
     "emojis": [
-      "💖"
+      "💖",
+      "🤓",
+      "🐵"
     ],
     "password": "$2b$10$2J0uCp7RcmDNRg6MWERB1ewpLHgJaAh7n0f01qHJyofajlIv1AoYi",
     "hasPassword": true
@@ -77,7 +79,13 @@
     "profile": "",
     "id": 7,
     "color": "#008000",
-    "password": "$2b$10$qYbML18F.TihOUBMTsePHeFHpsJGi0aIiQa6h4mPIxr/.1KoPeJNS"
+    "password": "$2b$10$qYbML18F.TihOUBMTsePHeFHpsJGi0aIiQa6h4mPIxr/.1KoPeJNS",
+    "emojis": [
+      "🍄",
+      "👀",
+      "✨",
+      "😉"
+    ]
   },
   "Sherman Magenta": {
     "name": "Sherman Magenta",
@@ -95,6 +103,16 @@
     "profile": "",
     "id": 9,
     "color": "#FF69B4",
-    "password": "$2b$10$LhF6jSbUU.1fHkpGym4vLuoolJ6zVnCSb2ZnN2q8EKXnXM4nQGLUy"
+    "password": "$2b$10$LhF6jSbUU.1fHkpGym4vLuoolJ6zVnCSb2ZnN2q8EKXnXM4nQGLUy",
+    "emojis": [
+      "😎",
+      "😋",
+      "🐵",
+      "🙊",
+      "🙉",
+      "🙈",
+      "👁",
+      "💗"
+    ]
   }
 }
