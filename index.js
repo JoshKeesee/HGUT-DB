@@ -15,6 +15,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const bcrypt = require("bcrypt");
 const webpush = require("web-push");
+const { exec } = require("child_process");
 const pushKeys = {
   public: process.env.PUBLIC_KEY,
   private: process.env.PRIVATE_KEY,
@@ -186,6 +187,20 @@ app.post("/user-data", (req, res) => {
     profiles: fp,
     rooms: cr,
   });
+});
+app.post("/github-webhook", (req, res) => {
+  const githubEvent = req.headers["x-github-event"];
+  if (githubEvent == "push") {
+    exec("git pull", (err, stdout, stderr) => {
+      if (err) return;
+      console.log(stdout);
+    });
+  } else if (githubEvent == "ping") {
+    console.log(`Received ping from GitHub`);
+  } else {
+    console.log(`Unhandled event ${githubEvent}`);
+  }
+  res.status(201).json({});
 });
 
 io.of("chat").use(ioAuth);
