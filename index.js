@@ -320,6 +320,17 @@ io.of("chat").on("connection", (socket) => {
   socket.broadcast.emit("person joined", socket.user);
 
   socket.on("settings", (s) => (socket.user.settings = s));
+  socket.on("add emoji", (e, cb) => {
+    if (!socket.user.emojis) socket.user.emojis = [];
+    if (!socket.user.emojis.includes(e)) socket.user.emojis.push(e);
+    cb(socket.user.emojis);
+  });
+  socket.on("remove emoji", (e, cb) => {
+    if (!socket.user.emojis) socket.user.emojis = [];
+    if (socket.user.emojis.includes(e))
+      socket.user.emojis.splice(socket.user.emojis.indexOf(e), 1);
+    cb(socket.user.emojis);
+  });
   socket.on("profile", (file, cb) => {
     if (!file.startsWith("data:")) return;
     const ext = file.split(";")[0].split("/")[1];
