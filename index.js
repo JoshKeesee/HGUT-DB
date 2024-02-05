@@ -188,7 +188,7 @@ app.post("/user-data", (req, res) => {
     rooms: cr,
   });
 });
-app.post("/github-webhook", (req, res) => {
+app.post("/github-webhooks", (req, res) => {
   const githubEvent = req.headers["x-github-event"];
   if (githubEvent == "push") {
     exec("git pull", (err, stdout, stderr) => {
