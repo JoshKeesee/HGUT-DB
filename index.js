@@ -190,6 +190,7 @@ app.post("/user-data", (req, res) => {
 });
 app.post("/github-webhooks", (req, res) => {
   const githubEvent = req.headers["x-github-event"];
+  console.log(`Received ${githubEvent} from GitHub`);
   if (githubEvent == "push") {
     exec("git pull", (err, stdout, stderr) => {
       if (err) return;
