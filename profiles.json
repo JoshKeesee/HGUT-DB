@@ -32,7 +32,11 @@
     "id": 2,
     "color": "#FF00FF",
     "password": "$2b$10$k92D8oYNX8UCQV29CW.JpOBY6.7JvTUS/RpwUfvV7rawE1e4Pm9Ly",
-    "hasPassword": true
+    "hasPassword": true,
+    "emojis": [
+      "🧐",
+      "🥸"
+    ]
   },
   "Abigail Pomicter": {
     "name": "Abigail Pomicter",
@@ -70,7 +74,11 @@
     "id": 6,
     "color": "#0000FF",
     "password": "$2b$10$04xRlQ7suEzvIpHZnIoRMO2b1JvT7.deWEOXXPLnLHXgUgG2G44c.",
-    "hasPassword": true
+    "hasPassword": true,
+    "emojis": [
+      "🧐",
+      "🥸"
+    ]
   },
   "Liliana Cramer": {
     "name": "Liliana Cramer",
@@ -112,7 +120,8 @@
       "🙉",
       "🙈",
       "👁",
-      "💗"
+      "💗",
+      "👣"
     ]
   }
 }

@@ -47,7 +47,7 @@ const filterProfiles = () => {
   });
   return ret;
 };
-const fp = filterProfiles();
+let fp = filterProfiles();
 fs.writeFileSync("profiles.json", JSON.stringify(profiles, null, 2));
 const sounds = [];
 fs.readdirSync("./sounds").forEach((f) => sounds.push(f.split(".")[0]));
@@ -311,10 +311,9 @@ io.of("chat").on("connection", (socket) => {
     fs.writeFileSync(name, Buffer.from(file.split(",")[1], "base64"));
     if (fs.existsSync(socket.user.profile)) fs.unlinkSync(socket.user.profile);
     socket.user.profile = name;
-    const p = fs.readFileSync("./profiles.json");
-    const profiles = JSON.parse(p);
     profiles[socket.user.name].profile = name;
     fs.writeFileSync("./profiles.json", JSON.stringify(profiles, null, 2));
+    fp = filterProfiles();
     const users = get("users") || {};
     users[socket.user.id] = socket.user;
     set({ users });
