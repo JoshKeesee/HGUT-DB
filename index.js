@@ -331,6 +331,24 @@ io.of("chat").on("connection", (socket) => {
       socket.user.emojis.splice(socket.user.emojis.indexOf(e), 1);
     cb(socket.user.emojis);
   });
+  socket.on("password", ([o, n], cb) => {
+    const p = profiles[socket.user.name];
+    if (!p) return;
+    if (
+      (p.hasPassword && !o) ||
+      !n ||
+      (p.hasPassword && !bcrypt.compareSync(o, p.password)) ||
+      o == n ||
+      n.length < 6 ||
+      n.length > 50 ||
+      n.match(/\s/g)
+    ) return cb(false);
+    p.password = bcrypt.hashSync(n, 10);
+    p.hasPassword = true;
+    profiles[socket.user.name] = p;
+    fs.writeFileSync("profiles.json", JSON.stringify(profiles, null, 2));
+    cb(true);
+  });
   socket.on("profile", (file, cb) => {
     if (!file.startsWith("data:")) return;
     const ext = file.split(";")[0].split("/")[1];
