@@ -344,8 +344,8 @@ io.of("chat").on("connection", (socket) => {
     const users = get("users") || {};
     users[socket.user.id] = socket.user;
     set({ users });
-    cb(socket.user.profile);
-    socket.broadcast.emit("update profile", socket.user);
+    cb();
+    io.of(curr).emit("update profile", socket.user);
   });
   socket.on("visible", (v) => {
     if (!o[socket.user.id])
