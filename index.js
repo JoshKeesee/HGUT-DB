@@ -15,7 +15,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const bcrypt = require("bcrypt");
 const webpush = require("web-push");
-const { exec } = require("child_process");
+const { execSync, spawn } = require("child_process");
 const pushKeys = {
   public: process.env.PUBLIC_KEY,
   private: process.env.PRIVATE_KEY,
@@ -192,15 +192,10 @@ app.post("/github-webhooks", (req, res) => {
   const githubEvent = req.headers["x-github-event"];
   console.log(`Received ${githubEvent} from GitHub`);
   if (githubEvent == "push") {
-    exec("git pull", (err, stdout, stderr) => {
-      if (err) return;
-      console.log(stdout);
-    });
-  } else if (githubEvent == "ping") {
-    console.log(`Received ping from GitHub`);
-  } else {
-    console.log(`Unhandled event ${githubEvent}`);
-  }
+    execSync("git pull", { stdio: "inherit" });
+    spawn("pm2", ["restart", "index"], { detached: true });
+  } else if (githubEvent == "ping") console.log(`Received ping from GitHub`);
+  else console.log(`Unhandled event ${githubEvent}`);
   res.status(201).json({});
 });
 
