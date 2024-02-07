@@ -188,14 +188,11 @@ app.post("/user-data", (req, res) => {
     rooms: cr,
   });
 });
-app.post("/github-webhooks", (req, res) => {
+app.post("/github-webhooks", async (req, res) => {
   const githubEvent = req.headers["x-github-event"];
   console.log(`Received ${githubEvent} from GitHub`);
-  if (githubEvent == "push") {
-    execSync("git pull", { stdio: "inherit" });
-    process.exit();
-    spawn("npm", ["start"], { detached: true, stdio: "inherit" }).unref();
-  } else if (githubEvent == "ping") console.log(`Received ping from GitHub`);
+  if (githubEvent == "push") execSync("git pull", { stdio: "inherit" });
+  else if (githubEvent == "ping") console.log(`Received ping from GitHub`);
   else console.log(`Unhandled event ${githubEvent}`);
   res.status(201).json({});
 });
