@@ -193,7 +193,7 @@ app.post("/github-webhooks", (req, res) => {
   console.log(`Received ${githubEvent} from GitHub`);
   if (githubEvent == "push") {
     execSync("git pull", { stdio: "inherit" });
-    process.disconnect();
+    process.exit();
     spawn("npm", ["start"], { detached: true, stdio: "inherit" }).unref();
   } else if (githubEvent == "ping") console.log(`Received ping from GitHub`);
   else console.log(`Unhandled event ${githubEvent}`);
