@@ -15,7 +15,7 @@ const dotenv = require("dotenv");
 dotenv.config();
 const bcrypt = require("bcrypt");
 const webpush = require("web-push");
-const { execSync, spawn } = require("child_process");
+const { execSync } = require("child_process");
 const pushKeys = {
   public: process.env.PUBLIC_KEY,
   private: process.env.PRIVATE_KEY,
@@ -134,6 +134,40 @@ const getAllowedFiles = (u) => {
 };
 
 setup();
+
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI(process.env.API_KEY);
+
+const generate = async (prompt, history = [], m = "gemini-pro") => {
+  try {
+    const model = genAI.getGenerativeModel({ model: m });
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessage(prompt);
+    const response = await result.response;
+    const text = response.text();
+    return text;
+  } catch (e) {
+    return false;
+  }
+};
+
+const generateStream = async (prompt, history = [], fn = () => {}, m = "gemini-pro") => {
+  try {
+    const model = genAI.getGenerativeModel({ model: m });
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessageStream(prompt);
+
+    let text = "";
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      text += chunkText;
+      fn(chunkText);
+    }
+    return text;
+  } catch (e) {
+    return false;
+  }
+};
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -391,6 +425,30 @@ io.of("chat").on("connection", (socket) => {
 
   socket.on("chat message", (message) => {
     sendMessage(message, socket.user, curr);
+
+    const aiUser = profiles["Artificial Intelligence"];
+    const { room: r, id: id1 } = socket.user;
+    const { id: id2 } = aiUser;
+    if (message.includes("@" + aiUser.name.replace(" ", "-")) || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
+      aiUser.room = socket.user.room;
+      const prompt = message.replace("@" + aiUser.name.replace(" ", "-"), "");
+      const messages = get("rooms")[socket.user.room].messages;
+      const fm = messages.splice(-maxMessages).map((m) => {
+        return {
+          role: m.name == aiUser.name ? "model" : "user",
+          parts: [{ text: m.message }],
+        };
+      });
+      delete fm[fm.length - 1];
+      if (!typing[r].includes(id2)) typing[r].push(id2);
+      io.of(curr).to(socket.user.room).emit("typing", typing[r]);
+      generateStream(prompt, fm).then((res) => {
+        typing[r].splice(typing[r].indexOf(id2), 1);
+        io.of(curr).to(socket.user.room).emit("typing", typing[r]);
+        if (!res) return;
+        sendMessage(res, aiUser, curr);
+      });
+    }
   });
 
   socket.on("get sounds", (cb) => cb(sounds));
@@ -488,7 +546,7 @@ io.of("chat").on("connection", (socket) => {
   socket.on("join room", (room) => {
     const rooms = get("rooms");
     if (!rooms[room]) {
-      const u = room.split("-").map((e) => Number(e));
+      const u = room.replace("-", ",").split(",").filter((e) => e >= Object.values(fp)[0].id).map((e) => parseInt(e));
       if (rooms[u[1] + "-" + u[0]]) room = u[1] + "-" + u[0];
       else if (u[0] == socket.user.id || u[1] == socket.user.id) {
         typing[room] = [];
@@ -560,7 +618,6 @@ const sendMessage = (message, us, curr, p = false) => {
     message = upload(message);
     isImage = true;
   }
-  if (message.length > 250) return;
   const rooms = get("rooms");
   const lastMessage =
     rooms[us.room].messages[rooms[us.room].messages.length - 1];

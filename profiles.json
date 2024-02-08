@@ -1,4 +1,13 @@
 {
+  "Artificial Intelligence": {
+    "name": "Artificial Intelligence",
+    "character": "Artificial Intelligence",
+    "dob": "???",
+    "id": -1,
+    "color": "#CCCCCC",
+    "password": "$2b$10$.G63CxtEoKBdU77JsZjf5elgTq28qgOMcKcUOMWZu6jW81KAJF1B6",
+    "hasPassword": true
+  },
   "Hannah Gibson": {
     "name": "Hannah Gibson",
     "character": "Zlymenteen Bojontwa",
@@ -13,7 +22,7 @@
     "name": "Liam Keesee",
     "character": "Zhenzhen Ogiene",
     "dob": "March 29, 0001 IZ",
-    "profile": "profiles/Liam Keesee.jpeg",
+    "profile": "profiles/Liam Keesee.png",
     "id": 1,
     "color": "#FFA500",
     "emojis": [
@@ -21,7 +30,7 @@
       "🤓",
       "🐵"
     ],
-    "password": "$2b$10$2J0uCp7RcmDNRg6MWERB1ewpLHgJaAh7n0f01qHJyofajlIv1AoYi",
+    "password": "$2b$10$Pz9tNj4grTvmYdur0K.ILegNxTZRSdUyD4yGrp1KSXwPx7tZJuXzC",
     "hasPassword": true
   },
   "Joshua Keesee": {
@@ -31,7 +40,7 @@
     "profile": "profiles/Joshua Keesee.jpeg",
     "id": 2,
     "color": "#FF00FF",
-    "password": "$2b$10$k92D8oYNX8UCQV29CW.JpOBY6.7JvTUS/RpwUfvV7rawE1e4Pm9Ly",
+    "password": "$2b$10$WsfYwiL813uYlg22xinoeueQFmkYQGzFCibtxgycx1CvGw.88fc1W",
     "hasPassword": true,
     "emojis": [
       "🧐",
