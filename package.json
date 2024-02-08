@@ -4,15 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon"
-  },
-  "nodemonConfig": {
-    "watch": [
-      "*.js",
-      "package.json",
-      "package-lock.json"
-    ],
-    "delay": 2500
+    "start": "node index.js"
   },
   "keywords": [],
   "author": "",
@@ -20,14 +12,11 @@
   "dependencies": {
     "@google/generative-ai": "^0.2.0",
     "@jkeesee/json-db": "^3.0.7",
-    "@types/node": "^18.0.6",
     "bcrypt": "^5.1.1",
     "cookie": "^0.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "node-fetch": "^3.2.6",
-    "nodemon": "^3.0.3",
     "socket.io": "^4.7.2",
     "web-push": "^3.6.6"
   }

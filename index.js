@@ -15,7 +15,6 @@ const dotenv = require("dotenv");
 dotenv.config();
 const bcrypt = require("bcrypt");
 const webpush = require("web-push");
-const { execSync } = require("child_process");
 const pushKeys = {
   public: process.env.PUBLIC_KEY,
   private: process.env.PRIVATE_KEY,
@@ -136,6 +135,7 @@ const getAllowedFiles = (u) => {
 setup();
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const path = require("path");
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 const getFormattedMessages = (messages, u) => {
@@ -155,32 +155,42 @@ const getFormattedMessages = (messages, u) => {
   return fm;
 };
 
-const generate = async (prompt, history = [], m = "gemini-pro") => {
-  try {
-    const model = genAI.getGenerativeModel({ model: m });
-    const chat = model.startChat({ history });
-    const result = await chat.sendMessage(prompt);
+const fileToGenerativePart = (path, mimeType) => {
+  return {
+    inlineData: {
+      data: Buffer.from(fs.readFileSync(path)).toString("base64"),
+      mimeType,
+    },
+  };
+};
+
+const generate = async (prompt, history = [], stream = false, fn = () => {}) => {
+  const img = prompt.startsWith("/images/");
+  const m = "gemini-pro", imgParts = [];
+  const model = genAI.getGenerativeModel({ model: img ? "gemini-pro-vision" : m });
+  if (img) {
+    const imgPath = prompt.replace("/images/", "images/");
+    imgParts.push(fileToGenerativePart(imgPath, "image/" + path.extname(prompt).replace(".", "")));
+    const result = await model.generateContent(["", ...imgParts]);
     const response = await result.response;
     const text = response.text();
     return text;
-  } catch (e) {
-    console.log(e);
-    return false;
   }
-};
-
-const generateStream = async (prompt, history = [], fn = () => {}, m = "gemini-pro") => {
   try {
-    const model = genAI.getGenerativeModel({ model: m });
     const chat = model.startChat({ history });
-    const result = await chat.sendMessageStream(prompt);
-
-    let text = "";
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text();
-      text += chunkText;
-      fn(chunkText);
+    if (stream) {
+      const result = await chat.sendMessageStream(prompt);
+      let text = "";
+      for await (const chunk of result.stream) {
+        const chunkText = chunk.text();
+        text += chunkText;
+        fn(chunkText);
+      }
+      return text;
     }
+    const result = await chat.sendMessage(prompt);
+    const response = await result.response;
+    const text = response.text();
     return text;
   } catch (e) {
     console.log(e);
@@ -239,14 +249,6 @@ app.post("/user-data", (req, res) => {
     profiles: fp,
     rooms: cr,
   });
-});
-app.post("/github-webhooks", async (req, res) => {
-  const githubEvent = req.headers["x-github-event"];
-  console.log(`Received ${githubEvent} from GitHub`);
-  if (githubEvent == "push") execSync("git pull", { stdio: "inherit" });
-  else if (githubEvent == "ping") console.log(`Received ping from GitHub`);
-  else console.log(`Unhandled event ${githubEvent}`);
-  res.status(201).json({});
 });
 
 io.of("chat").use(ioAuth);
@@ -442,11 +444,11 @@ io.of("chat").on("connection", (socket) => {
   });
 
   socket.on("chat message", (message) => {
-    sendMessage(message, socket.user, curr);
+    const { isImage, message: m } = sendMessage(message, socket.user, curr);
 
     const aiUser = profiles["Artificial Intelligence"];
     const reply = message.includes("@" + aiUser.name.replace(" ", "-"));
-    sendAIMessage(message, socket.user, reply, curr);
+    sendAIMessage(message, socket.user, reply, curr, isImage && m);
   });
 
   socket.on("get sounds", (cb) => cb(sounds));
@@ -613,13 +615,13 @@ const upload = (file) => {
   return name.replace(".", "");
 };
 
-const sendAIMessage = (message, us, reply, curr) => {
+const sendAIMessage = (message, us, reply, curr, imgUrl = false) => {
   const aiUser = profiles["Artificial Intelligence"];
   const { room: r, id: id1 } = us;
   const { id: id2 } = aiUser;
-  if (reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
+  if (imgUrl || reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
     aiUser.room = r;
-    const prompt = message.replace("@" + aiUser.name.replace(" ", "-"), "");
+    const prompt = imgUrl || message.replace("@" + aiUser.name.replace(" ", "-"), "");
     const messages = get("rooms")[r].messages;
     const m = structuredClone(messages).splice(-1)[0];
     const id = m.id;
@@ -630,10 +632,10 @@ const sendAIMessage = (message, us, reply, curr) => {
     if (fm[0]?.role == "model") fm.unshift({ role: "user", parts: [m.message] });
     if (!typing[r].includes(id2)) typing[r].push(id2);
     io.of(curr).to(r).emit("typing", typing[r]);
-    generateStream(prompt, fm).then((res) => {
+    generate(prompt, fm).then((res) => {
       typing[r].splice(typing[r].indexOf(id2), 1);
       io.of(curr).to(r).emit("typing", typing[r]);
-      if (!res) return io.of(curr).to(r).emit("ai error", res.text());
+      if (!res) return io.of(curr).to(r).emit("ai error", res);
       if (reply) {
         const rooms = get("rooms");
         const messages = rooms[r].messages;
@@ -731,6 +733,10 @@ const sendMessage = (message, us, curr, p = false) => {
     io.of(curr).emit("chat message", m);
   } else
     io.of(curr).emit("chat message", [message, us, new Date(), lastMessage, 0]);
+  return {
+    isImage,
+    message,
+  };
 };
 
 const port = process.env.PORT || 3000;
