@@ -138,6 +138,23 @@ setup();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
+const getFormattedMessages = (messages, u) => {
+  const fm = [];
+  let currRole = null;
+  for (const m of messages) {
+    const r = m.name == u.name ? "model" : "user";
+    if (currRole == r) fm[fm.length - 1].parts.push(m.message);
+    else {
+      currRole = r;
+      fm.push({
+        role: currRole,
+        parts: [m.message],
+      });
+    }
+  }
+  return fm;
+};
+
 const generate = async (prompt, history = [], m = "gemini-pro") => {
   try {
     const model = genAI.getGenerativeModel({ model: m });
@@ -147,6 +164,7 @@ const generate = async (prompt, history = [], m = "gemini-pro") => {
     const text = response.text();
     return text;
   } catch (e) {
+    console.log(e);
     return false;
   }
 };
@@ -165,6 +183,7 @@ const generateStream = async (prompt, history = [], fn = () => {}, m = "gemini-p
     }
     return text;
   } catch (e) {
+    console.log(e);
     return false;
   }
 };
@@ -427,28 +446,8 @@ io.of("chat").on("connection", (socket) => {
     sendMessage(message, socket.user, curr);
 
     const aiUser = profiles["Artificial Intelligence"];
-    const { room: r, id: id1 } = socket.user;
-    const { id: id2 } = aiUser;
-    if (message.includes("@" + aiUser.name.replace(" ", "-")) || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
-      aiUser.room = socket.user.room;
-      const prompt = message.replace("@" + aiUser.name.replace(" ", "-"), "");
-      const messages = get("rooms")[socket.user.room].messages;
-      const fm = messages.splice(-maxMessages).map((m) => {
-        return {
-          role: m.name == aiUser.name ? "model" : "user",
-          parts: [{ text: m.message }],
-        };
-      });
-      delete fm[fm.length - 1];
-      if (!typing[r].includes(id2)) typing[r].push(id2);
-      io.of(curr).to(socket.user.room).emit("typing", typing[r]);
-      generateStream(prompt, fm).then((res) => {
-        typing[r].splice(typing[r].indexOf(id2), 1);
-        io.of(curr).to(socket.user.room).emit("typing", typing[r]);
-        if (!res) return;
-        sendMessage(res, aiUser, curr);
-      });
-    }
+    const reply = message.includes("@" + aiUser.name.replace(" ", "-"));
+    sendAIMessage(message, socket.user, reply, curr);
   });
 
   socket.on("get sounds", (cb) => cb(sounds));
@@ -493,6 +492,11 @@ io.of("chat").on("connection", (socket) => {
         prev: r.messages[id].replies[i - 1],
         i,
       });
+    
+    const m = r.messages[id].message;
+    const aiUser = profiles["Artificial Intelligence"];
+    const reply = m.includes("@" + aiUser.name.replace(" ", "-"));
+    if (reply) sendAIMessage(message, socket.user, true, curr);
   });
 
   socket.on("delete", ({ id, profile, room }) => {
@@ -608,6 +612,52 @@ const upload = (file) => {
   const name = im + "/" + length + "." + ext;
   fs.writeFileSync(name, Buffer.from(file.split(",")[1], "base64"));
   return name.replace(".", "");
+};
+
+const sendAIMessage = (message, us, reply, curr) => {
+  const aiUser = profiles["Artificial Intelligence"];
+  const { room: r, id: id1 } = us;
+  const { id: id2 } = aiUser;
+  if (reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
+    aiUser.room = r;
+    const prompt = message.replace("@" + aiUser.name.replace(" ", "-"), "");
+    const messages = get("rooms")[r].messages;
+    const id = messages.splice(-1)[0].id;
+    let fm = reply ?
+      getFormattedMessages(messages.splice(-1)[0]?.replies || [], aiUser) :
+      getFormattedMessages(messages, aiUser);
+    delete fm[fm.length - 1];
+    if (!typing[r].includes(id2)) typing[r].push(id2);
+    io.of(curr).to(r).emit("typing", typing[r]);
+    generateStream(prompt, fm).then((res) => {
+      typing[r].splice(typing[r].indexOf(id2), 1);
+      io.of(curr).to(r).emit("typing", typing[r]);
+      if (!res) return io.of(curr).to(r).emit("ai error");
+      if (reply) {
+        const rooms = get("rooms");
+        const messages = rooms[r].messages;
+        const m = messages.find((m) => m.id == id);
+        if (!m.replies) m.replies = [];
+        m.replies.push({
+          message: res,
+          name: aiUser.name,
+          date: new Date(),
+        });
+        set({ rooms });
+        const i = m.replies.length - 1;
+        io.of(curr)
+          .to(r)
+          .emit("reply", {
+            id,
+            message: res,
+            user: aiUser,
+            date: new Date(),
+            prev: m.replies[i - 1],
+            i,
+          });
+      } else sendMessage(res, aiUser, curr);
+    });
+  }
 };
 
 const sendMessage = (message, us, curr, p = false) => {
