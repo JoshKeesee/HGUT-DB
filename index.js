@@ -190,7 +190,6 @@ const generateStream = async (prompt, history = [], fn = () => {}, m = "gemini-p
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static(__dirname + "/public"));
 app.use(cors());
 app.use("/profiles", express.static(__dirname + "/profiles"));
 app.use("/images", express.static(__dirname + "/images"));
@@ -212,7 +211,7 @@ app.post("/message", (req, res) => {
   sendMessage(r.message, r.user, "chat", true);
 });
 app.get("/p", (req, res) => {
-  res.json(fp);
+  res.status(201).json(fp);
 });
 app.post("/p", (req, res) => {
   const r = req.body;
@@ -220,7 +219,7 @@ app.post("/p", (req, res) => {
   if (r.passwords) ret.profiles = profiles;
   else ret.profiles = fp;
   if (r.accessCode) ret.accessCode = accessCode;
-  res.json(ret);
+  res.status(201).json(ret);
 });
 app.post("/user-data", (req, res) => {
   const id =
@@ -622,21 +621,23 @@ const sendAIMessage = (message, us, reply, curr) => {
     aiUser.room = r;
     const prompt = message.replace("@" + aiUser.name.replace(" ", "-"), "");
     const messages = get("rooms")[r].messages;
-    const id = messages.splice(-1)[0].id;
+    const m = structuredClone(messages).splice(-1)[0];
+    const id = m.id;
     let fm = reply ?
-      getFormattedMessages(messages.splice(-1)[0]?.replies || [], aiUser) :
+      getFormattedMessages(m?.replies || [], aiUser) :
       getFormattedMessages(messages, aiUser);
-    delete fm[fm.length - 1];
+    if (fm[fm.length - 1]?.role == "user") fm.pop();
+    if (fm[0]?.role == "model") fm.unshift({ role: "user", parts: [m.message] });
     if (!typing[r].includes(id2)) typing[r].push(id2);
     io.of(curr).to(r).emit("typing", typing[r]);
     generateStream(prompt, fm).then((res) => {
       typing[r].splice(typing[r].indexOf(id2), 1);
       io.of(curr).to(r).emit("typing", typing[r]);
-      if (!res) return io.of(curr).to(r).emit("ai error");
+      if (!res) return io.of(curr).to(r).emit("ai error", res.text());
       if (reply) {
         const rooms = get("rooms");
         const messages = rooms[r].messages;
-        const m = messages.find((m) => m.id == id);
+        const m = messages[id];
         if (!m.replies) m.replies = [];
         m.replies.push({
           message: res,
