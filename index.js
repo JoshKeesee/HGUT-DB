@@ -194,7 +194,7 @@ const generate = async (prompt, history = [], stream = false, fn = () => {}) => 
     return text;
   } catch (e) {
     console.log(e);
-    return false;
+    return { error: e };
   }
 };
 
@@ -446,7 +446,7 @@ io.of("chat").on("connection", (socket) => {
   socket.on("chat message", (message) => {
     const { isImage, message: m } = sendMessage(message, socket.user, curr);
 
-    const aiUser = profiles["Artificial Intelligence"];
+    const aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     const reply = message.includes("@" + aiUser.name.replace(" ", "-"));
     sendAIMessage(message, socket.user, reply, curr, isImage && m);
   });
@@ -495,7 +495,7 @@ io.of("chat").on("connection", (socket) => {
       });
     
     const m = r.messages[id].message;
-    const aiUser = profiles["Artificial Intelligence"];
+    const aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     const reply = m.includes("@" + aiUser.name.replace(" ", "-"));
     if (reply) sendAIMessage(message, socket.user, true, curr);
   });
@@ -616,7 +616,7 @@ const upload = (file) => {
 };
 
 const sendAIMessage = (message, us, reply, curr, imgUrl = false) => {
-  const aiUser = profiles["Artificial Intelligence"];
+  const aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
   const { room: r, id: id1 } = us;
   const { id: id2 } = aiUser;
   if (imgUrl || reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
@@ -635,7 +635,7 @@ const sendAIMessage = (message, us, reply, curr, imgUrl = false) => {
     generate(prompt, fm).then((res) => {
       typing[r].splice(typing[r].indexOf(id2), 1);
       io.of(curr).to(r).emit("typing", typing[r]);
-      if (!res) return io.of(curr).to(r).emit("ai error", res);
+      if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
       if (reply) {
         const rooms = get("rooms");
         const messages = rooms[r].messages;
