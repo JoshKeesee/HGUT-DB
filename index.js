@@ -482,6 +482,7 @@ io.of("chat").on("connection", (socket) => {
     const rooms = get("rooms");
     const r = rooms[room];
     if (!r) return;
+    if (!r.messages[id]) return;
     if (!r.messages[id].replies) r.messages[id].replies = [];
     const date = new Date();
     r.messages[id].replies.push({
