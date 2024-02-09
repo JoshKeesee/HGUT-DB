@@ -444,6 +444,14 @@ io.of("chat").on("connection", (socket) => {
   });
 
   socket.on("chat message", (message) => {
+    if (message == "/clear") {
+      if (socket.user.room != socket.user.id + "--1" || curr != "chat") return io.of(curr).to(socket.user.room).emit("cancel clear");
+      const rooms = get("rooms");
+      rooms[socket.user.room].messages = [];
+      set({ rooms });
+      io.of(curr).to(socket.user.room).emit("clear", socket.user);
+      return;
+    }
     const { isImage, message: m } = sendMessage(message, socket.user, curr);
 
     const aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
