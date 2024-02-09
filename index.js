@@ -505,7 +505,7 @@ io.of("chat").on("connection", (socket) => {
     const m = r.messages[id].message;
     const aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     const reply = m.includes("@" + aiUser.name.replace(" ", "-"));
-    if (reply) sendAIMessage(message, socket.user, true, curr);
+    if (reply || r.messages[id].name == aiUser.name) sendAIMessage(message, socket.user, true, curr);
   });
 
   socket.on("delete", ({ id, profile, room }) => {
@@ -637,7 +637,10 @@ const sendAIMessage = (message, us, reply, curr, imgUrl = false) => {
       getFormattedMessages(m?.replies || [], aiUser) :
       getFormattedMessages(messages, aiUser);
     if (fm[fm.length - 1]?.role == "user") fm.pop();
-    if (fm[0]?.role == "model") fm.unshift({ role: "user", parts: [m.message] });
+    if (fm[0]?.role == "model") {
+      if (m.name != aiUser.name) fm.unshift({ role: "user", parts: [m.message] });
+      else fm.unshift({ role: "user", parts: ["hello"] });
+    }
     if (!typing[r].includes(id2)) typing[r].push(id2);
     io.of(curr).to(r).emit("typing", typing[r]);
     generate(prompt, fm).then((res) => {
