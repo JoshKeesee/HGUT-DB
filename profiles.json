@@ -7,7 +7,8 @@
     "id": -1,
     "color": "#FF5733",
     "password": "$2b$10$.G63CxtEoKBdU77JsZjf5elgTq28qgOMcKcUOMWZu6jW81KAJF1B6",
-    "hasPassword": true
+    "hasPassword": true,
+    "room": "1--1"
   },
   "Hannah Gibson": {
     "name": "Hannah Gibson",
@@ -94,7 +95,7 @@
     "name": "Liliana Cramer",
     "character": "Xemine 'Miss' Sloop",
     "dob": "April 10, 1987 IZ",
-    "profile": "",
+    "profile": "profiles/Liliana Cramer.jpeg",
     "id": 7,
     "color": "#008000",
     "password": "$2b$10$qYbML18F.TihOUBMTsePHeFHpsJGi0aIiQa6h4mPIxr/.1KoPeJNS",
@@ -102,7 +103,9 @@
       "🍄",
       "👀",
       "✨",
-      "😉"
+      "😉",
+      "🦕",
+      "🐌"
     ]
   },
   "Sherman Magenta": {
@@ -118,7 +121,7 @@
     "name": "Madison Cramer",
     "character": "Madison Cramer",
     "dob": "???",
-    "profile": "",
+    "profile": "profiles/Madison Cramer.jpeg",
     "id": 9,
     "color": "#FF69B4",
     "password": "$2b$10$LhF6jSbUU.1fHkpGym4vLuoolJ6zVnCSb2ZnN2q8EKXnXM4nQGLUy",

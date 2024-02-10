@@ -168,15 +168,15 @@ const generate = async (prompt, history = [], stream = false, fn = () => {}) => 
   const img = prompt.startsWith("/images/");
   const m = "gemini-pro", imgParts = [];
   const model = genAI.getGenerativeModel({ model: img ? "gemini-pro-vision" : m });
-  if (img) {
-    const imgPath = prompt.replace("/images/", "images/");
-    imgParts.push(fileToGenerativePart(imgPath, "image/" + path.extname(prompt).replace(".", "")));
-    const result = await model.generateContent(["", ...imgParts]);
-    const response = await result.response;
-    const text = response.text();
-    return text;
-  }
   try {
+    if (img) {
+      const imgPath = prompt.replace("/images/", "images/");
+      imgParts.push(fileToGenerativePart(imgPath, "image/" + path.extname(prompt).replace(".", "")));
+      const result = await model.generateContent(["", ...imgParts]);
+      const response = await result.response;
+      const text = response.text();
+      return text;
+    }
     const chat = model.startChat({ history });
     if (stream) {
       const result = await chat.sendMessageStream(prompt);
