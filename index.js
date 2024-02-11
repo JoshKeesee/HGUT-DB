@@ -145,10 +145,9 @@ removeUnusedFiles();
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const path = require("path");
-const { send } = require("process");
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
-const getFormattedMessages = (messages, u) => {
+const getFormattedMessages = (messages, u, user) => {
   const fm = [];
   let currRole = null;
   for (const m of messages) {
@@ -161,6 +160,20 @@ const getFormattedMessages = (messages, u) => {
         parts: [m.message.replace("@" + u.name.replace(" ", "-"), "")],
       });
     }
+  }
+  if (user) {
+    const ip = `
+      From now on you must always refer to yourself as ${u.name}, no matter what.
+      Your first name is ${u.name.split(" ")[0]}.
+      Your last name is ${u.name.split(" ")[1]}.
+      My first name is ${user.name.split(" ")[0]}.
+      My last name is ${user.name.split(" ")[1]}.
+      You are a helpful chatbot who can generate images and text.
+      You are in a chat site called HGUT which is short for "The Hobo's Guide to the Universe of Texas".
+    `;
+    if (fm[0]?.role == "model") fm.unshift({ role: "user", parts: [ip] });
+    else if (fm[0]) fm[0].parts.unshift(ip);
+    else fm.unshift({ role: "user", parts: [ip] });
   }
   return fm;
 };
@@ -659,7 +672,7 @@ const upload = (file) => {
 };
 
 const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
-  const aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
+  const aiUser = structuredClone(profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)]);
   const { room: r, id: id1 } = us;
   const { id: id2 } = aiUser;
   if (reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
@@ -669,8 +682,8 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
     const m = structuredClone(messages).splice(-1)[0];
     const id = m.id;
     let fm = reply ?
-      getFormattedMessages(m?.replies || [], aiUser) :
-      getFormattedMessages(messages, aiUser);
+      getFormattedMessages(m?.replies || [], aiUser, us) :
+      getFormattedMessages(messages, aiUser, us);
     if (fm[fm.length - 1]?.role == "user") fm.pop();
     if (fm[0]?.role == "model") {
       if (m.name != aiUser.name) fm.unshift({ role: "user", parts: [m.message] });
@@ -683,9 +696,10 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
       io.of(curr).to(r).emit("typing", typing[r]);
     };
 
+    const l = prompt.toLowerCase();
     const gts = ["generate", "make", "create", "form", "produce", "construct", "build", "imagine", "fabricate", "design", "develop", "compose", "formulate", "forge", "conjure", "originate", "invent", "concoct", "spawn", "hatch", "dream up", "cook up", "whip up", "come up with", "devise", "think up"];
     const imgTerms = ["image", "picture", "photo", "visual", "illustration", "drawing", "diagram", "portrait", "painting", "sketch"];
-    const isImgPrompt = gts.some((e) => prompt.includes(e)) && imgTerms.some((e) => prompt.includes(e));
+    const isImgPrompt = gts.some((e) => l.includes(e)) && imgTerms.some((e) => l.includes(e));
 
     setTyping();
   
