@@ -697,7 +697,7 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
     };
 
     const l = prompt.toLowerCase();
-    const gts = ["generate", "make", "create", "form", "produce", "construct", "build", "imagine", "fabricate", "design", "develop", "compose", "formulate", "forge", "conjure", "originate", "invent", "concoct", "spawn", "hatch", "dream up", "cook up", "whip up", "come up with", "devise", "think up"];
+    const gts = ["generate", "make", "create", "form", "produce", "construct", "build", "imagine", "fabricate", "design", "develop", "compose", "formulate", "forge", "conjure", "originate", "invent", "concoct", "spawn", "hatch", "dream up", "cook up", "whip up", "come up with", "devise", "think up", "image of"];
     const imgTerms = ["image", "picture", "photo", "visual", "illustration", "drawing", "diagram", "portrait", "painting", "sketch"];
     const isImgPrompt = gts.some((e) => l.includes(e)) && imgTerms.some((e) => l.includes(e));
 
