@@ -116,7 +116,7 @@ const updateMessageIds = () => {
 const getAllowedFiles = (u) => {
   const r = get("rooms");
   const a = Object.keys(r).filter(
-    (k) => r[k].allowed == "all" || r[k].allowed.includes(u.id),
+    (k) => r[k].allowed == "all" || r[k].allowed.includes(u.id) || u == "all",
   );
   const files = [];
   a.forEach((k) => {
@@ -132,10 +132,20 @@ const getAllowedFiles = (u) => {
   return [...new Set(files)];
 };
 
+const removeUnusedFiles = () => {
+  const files = getAllowedFiles("all");
+  const f = fs.readdirSync(im);
+  f.forEach((file) => {
+    if (!files.find((e) => e.name == file)) fs.unlinkSync(im + "/" + file);
+  });
+}
+
 setup();
+removeUnusedFiles();
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const path = require("path");
+const { send } = require("process");
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 const getFormattedMessages = (messages, u) => {
@@ -143,12 +153,12 @@ const getFormattedMessages = (messages, u) => {
   let currRole = null;
   for (const m of messages) {
     const r = m.name == u.name ? "model" : "user";
-    if (currRole == r) fm[fm.length - 1].parts.push(m.message);
+    if (currRole == r) fm[fm.length - 1].parts.push(m.message.replace("@" + u.name.replace(" ", "-"), ""));
     else {
       currRole = r;
       fm.push({
         role: currRole,
-        parts: [m.message],
+        parts: [m.message.replace("@" + u.name.replace(" ", "-"), "")],
       });
     }
   }
@@ -196,6 +206,28 @@ const generate = async (prompt, history = [], stream = false, fn = () => {}) => 
     console.log(e);
     return { error: e };
   }
+};
+
+const generateImage = async (prompt, num = 1) => {
+  const raw = JSON.stringify({
+    inputs: prompt,
+  });
+  const reqOpts = {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.IMAGE_API_KEY}`,
+    },
+    body: raw,
+  };
+  const res = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0", reqOpts);
+  const data = await res.blob();
+  const buffer = await data.arrayBuffer();
+  if (buffer.byteLength > 0) {
+    const file = Buffer.from(buffer).toString("base64");
+    const name = upload("data:image/png;base64," + file);
+    return name;
+  }
+  return { error: "No image generated" };
 };
 
 app.use(express.urlencoded({ extended: true }));
@@ -400,8 +432,8 @@ io.of("chat").on("connection", (socket) => {
     if (!file.startsWith("data:")) return;
     const ext = file.split(";")[0].split("/")[1];
     const name = "profiles/" + socket.user.name + "." + ext;
-    fs.writeFileSync(name, Buffer.from(file.split(",")[1], "base64"));
     if (fs.existsSync(socket.user.profile)) fs.unlinkSync(socket.user.profile);
+    fs.writeFileSync(name, Buffer.from(file.split(",")[1], "base64"));
     socket.user.profile = name;
     profiles[socket.user.name].profile = name;
     fs.writeFileSync("./profiles.json", JSON.stringify(profiles, null, 2));
@@ -450,6 +482,7 @@ io.of("chat").on("connection", (socket) => {
       rooms[socket.user.room].messages = [];
       set({ rooms });
       io.of(curr).to(socket.user.room).emit("clear", socket.user);
+      removeUnusedFiles();
       return;
     }
     const { isImage, message: m } = sendMessage(message, socket.user, curr);
@@ -518,6 +551,7 @@ io.of("chat").on("connection", (socket) => {
     r.messages.splice(id, 1);
     set({ rooms });
     updateMessageIds();
+    removeUnusedFiles();
     io.of(curr).to(room).emit("delete", { id });
   });
 
@@ -618,19 +652,19 @@ io.of("chat").on("connection", (socket) => {
 const upload = (file) => {
   if (!file.includes("data:")) return file;
   const ext = file.split(";")[0].split("/")[1];
-  const length = fs.readdirSync(im).length;
-  const name = im + "/" + length + "." + ext;
+  const nm = Date.now();
+  const name = im + "/" + nm + "." + ext;
   fs.writeFileSync(name, Buffer.from(file.split(",")[1], "base64"));
   return name.replace(".", "");
 };
 
-const sendAIMessage = (message, us, reply, curr, imgUrl = false) => {
+const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
   const aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
   const { room: r, id: id1 } = us;
   const { id: id2 } = aiUser;
-  if (imgUrl || reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
+  if (reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
     aiUser.room = r;
-    const prompt = imgUrl || message.replace("@" + aiUser.name.replace(" ", "-"), "");
+    let prompt = imgUrl || message.replace("@" + aiUser.name.replace(" ", "-"), "");
     const messages = get("rooms")[r].messages;
     const m = structuredClone(messages).splice(-1)[0];
     const id = m.id;
@@ -642,36 +676,57 @@ const sendAIMessage = (message, us, reply, curr, imgUrl = false) => {
       if (m.name != aiUser.name) fm.unshift({ role: "user", parts: [m.message] });
       else fm.unshift({ role: "user", parts: ["hello"] });
     }
-    if (!typing[r].includes(id2)) typing[r].push(id2);
-    io.of(curr).to(r).emit("typing", typing[r]);
-    generate(prompt, fm).then((res) => {
-      typing[r].splice(typing[r].indexOf(id2), 1);
+
+    const setTyping = (t = true) => {
+      if (!t) typing[r].splice(typing[r].indexOf(id2), 1);
+      else if (!typing[r].includes(id2)) typing[r].push(id2);
       io.of(curr).to(r).emit("typing", typing[r]);
+    };
+
+    const gts = ["generate", "make", "create", "form", "produce", "construct", "build", "imagine", "fabricate", "design", "develop", "compose", "formulate", "forge", "conjure", "originate", "invent", "concoct", "spawn", "hatch", "dream up", "cook up", "whip up", "come up with", "devise", "think up"];
+    const imgTerms = ["image", "picture", "photo", "visual", "illustration", "drawing", "diagram", "portrait", "painting", "sketch"];
+    const isImgPrompt = gts.some((e) => prompt.includes(e)) && imgTerms.some((e) => prompt.includes(e));
+
+    setTyping();
+  
+    if (isImgPrompt) {
+      const gis = ["I'll try to create that", "Sure, I'll give it a shot", "I'll see what I can do", "I'll try to generate an image for that", "I'll see what I can come up with"];
+      sendMessage(gis[Math.floor(Math.random() * gis.length)], aiUser, curr);
+      setTyping();
+      const res = await generateImage(prompt);
       if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
-      if (reply) {
-        const rooms = get("rooms");
-        const messages = rooms[r].messages;
-        const m = messages[id];
-        if (!m.replies) m.replies = [];
-        m.replies.push({
+      sendMessage(res, aiUser, curr);
+      prompt = res;
+    }
+
+    setTyping();
+
+    const res = await generate(prompt, fm);
+    setTyping(false);
+    if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
+    if (reply) {
+      const rooms = get("rooms");
+      const messages = rooms[r].messages;
+      const m = messages[id];
+      if (!m.replies) m.replies = [];
+      m.replies.push({
+        message: res,
+        name: aiUser.name,
+        date: new Date(),
+      });
+      set({ rooms });
+      const i = m.replies.length - 1;
+      io.of(curr)
+        .to(r)
+        .emit("reply", {
+          id,
           message: res,
-          name: aiUser.name,
+          user: aiUser,
           date: new Date(),
+          prev: m.replies[i - 1],
+          i,
         });
-        set({ rooms });
-        const i = m.replies.length - 1;
-        io.of(curr)
-          .to(r)
-          .emit("reply", {
-            id,
-            message: res,
-            user: aiUser,
-            date: new Date(),
-            prev: m.replies[i - 1],
-            i,
-          });
-      } else sendMessage(res, aiUser, curr);
-    });
+    } else sendMessage(res, aiUser, curr);
   }
 };
 
