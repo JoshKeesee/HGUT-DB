@@ -53,7 +53,7 @@ const sounds = [];
 fs.readdirSync("./sounds").forEach((f) => sounds.push(f.split(".")[0]));
 const ioAuth = require("./io-auth");
 const p = "./profiles";
-const im = "./images";
+const im = "./files";
 const online = {},
   switched = {},
   typing = {},
@@ -121,10 +121,10 @@ const getAllowedFiles = (u) => {
   const files = [];
   a.forEach((k) => {
     r[k].messages.forEach((m) => {
-      if (m.message.startsWith("/images/"))
+      if (m.message.startsWith("/files/"))
         files.push({
-          name: m.message.replace("/images/", ""),
-          url: m.message.replace("/images/", "images/"),
+          name: m.message.replace("/files/", ""),
+          url: m.message.replace("/files/", "files/"),
           room: k,
         });
     });
@@ -188,12 +188,12 @@ const fileToGenerativePart = (path, mimeType) => {
 };
 
 const generate = async (prompt, history = [], stream = false, fn = () => {}) => {
-  const img = prompt.startsWith("/images/");
+  const img = prompt.startsWith("/files/");
   const m = "gemini-pro", imgParts = [];
   const model = genAI.getGenerativeModel({ model: img ? "gemini-pro-vision" : m });
   try {
     if (img) {
-      const imgPath = prompt.replace("/images/", "images/");
+      const imgPath = prompt.replace("/files/", "files/");
       imgParts.push(fileToGenerativePart(imgPath, "image/" + path.extname(prompt).replace(".", "")));
       const result = await model.generateContent(["", ...imgParts]);
       const response = await result.response;
@@ -247,7 +247,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 app.use("/profiles", express.static(__dirname + "/profiles"));
-app.use("/images", express.static(__dirname + "/images"));
+app.use("/files", express.static(__dirname + "/files"));
 app.use("/sounds", express.static(__dirname + "/sounds"));
 app.post("/subscribe", (req, res) => {
   const user = fp[req.body.user];

@@ -4,6 +4,6 @@ replit.nix
 .codesandbox
 .devcontainer
 node_modules
-images
+files
 .github
 package-lock.json
