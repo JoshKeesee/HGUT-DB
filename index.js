@@ -145,6 +145,7 @@ removeUnusedFiles();
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const path = require("path");
+const mime = require("mime-types");
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 
 const getFormattedMessages = (messages, u, user) => {
@@ -188,7 +189,7 @@ const fileToGenerativePart = (path, mimeType) => {
 };
 
 const generate = async (prompt, history = [], stream = false, fn = () => {}) => {
-  const img = prompt.startsWith("/files/");
+  const img = prompt.startsWith("/files/") && mime.lookup(prompt) && mime.lookup(prompt).includes("image");
   const m = "gemini-pro", imgParts = [];
   const model = genAI.getGenerativeModel({ model: img ? "gemini-pro-vision" : m });
   try {
@@ -243,8 +244,8 @@ const generateImage = async (prompt, num = 1) => {
   return { error: "No image generated" };
 };
 
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use("/profiles", express.static(__dirname + "/profiles"));
 app.use("/files", express.static(__dirname + "/files"));
@@ -488,7 +489,7 @@ io.of("chat").on("connection", (socket) => {
     set({ users });
   });
 
-  socket.on("chat message", (message) => {
+  const msg = (message) => {
     if (message == "/clear") {
       if (socket.user.room != socket.user.id + "--1" || curr != "chat") return io.of(curr).to(socket.user.room).emit("cancel clear");
       const rooms = get("rooms");
@@ -499,10 +500,25 @@ io.of("chat").on("connection", (socket) => {
       return;
     }
     const { isImage, message: m } = sendMessage(message, socket.user, curr);
-
     const aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     const reply = message.includes("@" + aiUser.name.replace(" ", "-"));
     sendAIMessage(message, socket.user, reply, curr, isImage && m);
+  };
+
+  socket.on("chat message", msg);
+
+  socket.on("upload", ([file, mimeType], cb) => {
+    const buffer = Buffer.from(file, "base64");
+    const dataUri = "data:" + mimeType + ";base64," + buffer.toString("base64");
+    msg(dataUri);
+  });
+
+  socket.on("upload chunk", ([file, name, ext, i, l]) => {
+    const buffer = Buffer.from(file, "base64");
+    const p = im + "/" + name + (ext ? "." + ext : "");
+    if (i == 0) fs.writeFileSync(p, buffer);
+    else fs.appendFileSync(p, buffer);
+    if (i == l - 1) msg(p.replace(".", ""));
   });
 
   socket.on("get sounds", (cb) => cb(sounds));
@@ -664,7 +680,8 @@ io.of("chat").on("connection", (socket) => {
 
 const upload = (file) => {
   if (!file.includes("data:")) return file;
-  const ext = file.split(";")[0].split("/")[1];
+  const mimeType = file.split(";")[0].split(":")[1];
+  const ext = mime.extension(mimeType);
   const nm = Date.now();
   const name = im + "/" + nm + "." + ext;
   fs.writeFileSync(name, Buffer.from(file.split(",")[1], "base64"));
