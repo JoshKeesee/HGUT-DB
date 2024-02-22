@@ -289,9 +289,9 @@ const generateImage = async (prompt, num = 1) => {
   const res = await fetch("https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0", reqOpts);
   const data = await res.blob();
   const buffer = await data.arrayBuffer();
-  if (buffer.byteLength > 0) {
+  if (buffer.byteLength > 0 && data.type.includes("image")) {
     const file = Buffer.from(buffer).toString("base64");
-    const name = upload("data:image/png;base64," + file);
+    const name = upload("data:" + data.type + ";base64," + file);
     return name;
   }
   return { error: "No image generated" };
