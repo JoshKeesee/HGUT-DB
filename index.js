@@ -59,7 +59,7 @@ const online = {},
   switched = {},
   typing = {},
   callList = [],
-  maxMessages = 50;
+  initMessages = 20;
 
 const setup = () => {
   if (!fs.existsSync(p)) fs.mkdirSync(p);
@@ -445,7 +445,7 @@ io.of("chat").on("connection", (socket) => {
 
   socket.join(socket.user.room);
   const r = get("rooms") || {};
-  const m = structuredClone(r[socket.user.room].messages).slice(-maxMessages);
+  const m = structuredClone(r[socket.user.room].messages).slice(-initMessages);
   socket.emit("load messages", [m, false]);
   socket.emit("typing", typing[socket.user.room]);
   socket.emit("unread", socket.user.unread);
@@ -655,18 +655,18 @@ io.of("chat").on("connection", (socket) => {
     cb(files);
   });
 
-  socket.on("load messages", (lm) => {
+  socket.on("load messages", (lm, mm = initMessages) => {
     const rooms = get("rooms");
     const m = rooms[socket.user.room].messages;
     socket.emit("load messages", [
       m.slice(
-        Math.max(0, m.length - lm - maxMessages),
+        Math.max(0, m.length - lm - mm),
         Math.max(0, m.length - lm),
       ),
     ]);
   });
 
-  socket.on("join room", async (room) => {
+  socket.on("join room", async (room, mm = initMessages) => {
     const rooms = get("rooms");
     let newRoom = false;
     if (!rooms[room]) {
@@ -711,7 +711,7 @@ io.of("chat").on("connection", (socket) => {
     set({ users });
     socket.emit("typing", typing[socket.user.room]);
     socket.emit("join room", [
-      rooms[socket.user.room].messages.slice(-maxMessages),
+      rooms[socket.user.room].messages.slice(-mm),
       room,
       socket.user.unread,
     ]);
