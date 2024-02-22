@@ -11,6 +11,7 @@ const io = require("socket.io")(server, {
 const { get, set } = require("./db");
 const checkUser = require("./check-user");
 const fs = require("fs");
+const path = require("path");
 const dotenv = require("dotenv");
 dotenv.config();
 const bcrypt = require("bcrypt");
@@ -63,48 +64,35 @@ const online = {},
 const setup = () => {
   if (!fs.existsSync(p)) fs.mkdirSync(p);
   if (!fs.existsSync(im)) fs.mkdirSync(im);
-  if (!get("rooms"))
-    set({
-      rooms: {
-        main: {
-          name: "Main",
-          messages: [],
-          allowed: "all",
-        },
-        writers: {
-          name: "Writers",
-          messages: [],
-          allowed: "all",
-        },
-        disease: {
-          name: '"The Disease"',
-          messages: [],
-          allowed: [2, 3, 4, 6],
-        },
-        eth: {
-          name: '"Eth"',
-          messages: [],
-          allowed: "all",
-        },
-      },
-    });
-  if (!get("users")) set({ users: {} });
-  const r = get("rooms");
-  if (!r["eth"])
-    r["eth"] = {
+  const defaultRooms = {
+    main: {
+      name: "Main",
+      messages: [],
+      allowed: "all",
+    },
+    writers: {
+      name: "Writers",
+      messages: [],
+      allowed: "all",
+    },
+    eth: {
       name: '"Eth"',
       messages: [],
       allowed: "all",
-    };
-  if (!r["oldtimeycommunication"])
-    r["oldtimeycommunication"] = {
+    },
+    oldtimeycommunication: {
       name: "Old Timey Communication",
       messages: [],
       allowed: [0, 2, 3, 6, 8],
-    };
+    },
+  };
+  if (!get("rooms")) set({ rooms: defaultRooms });
+  if (!get("users")) set({ users: {} });
+  const r = get("rooms");
+  Object.keys(defaultRooms).forEach((k) => !r[k] && (r[k] = defaultRooms[k]));
   set("rooms", r);
   updateMessageIds();
-  Object.keys(get("rooms")).forEach((k) => (typing[k] = []));
+  Object.keys(r).forEach((k) => (typing[k] = []));
 };
 
 const updateMessageIds = () => {
@@ -138,7 +126,7 @@ const removeUnusedFiles = () => {
   f.forEach((file) => {
     if (!files.find((e) => e.name == file)) fs.unlinkSync(im + "/" + file);
   });
-}
+};
 
 setup();
 removeUnusedFiles();
@@ -146,7 +134,6 @@ removeUnusedFiles();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const docs = require("@googleapis/docs");
-const path = require("path");
 const mime = require("mime-types");
 
 const client = docs.docs({
