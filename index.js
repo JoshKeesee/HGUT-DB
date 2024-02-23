@@ -281,6 +281,8 @@ const generateImage = async (prompt, num = 1) => {
     const name = upload("data:" + data.type + ";base64," + file);
     return name;
   }
+  const json = await data.json();
+  console.log(json);
   return { error: "No image generated" };
 };
 
@@ -782,6 +784,7 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
       sendMessage(gis[Math.floor(Math.random() * gis.length)], aiUser, curr);
       setTyping();
       const res = await generateImage(prompt);
+      setTyping(false);
       if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
       sendMessage(res, aiUser, curr);
       return;
@@ -796,6 +799,7 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
       const rooms = get("rooms");
       const messages = rooms[r].messages;
       const m = messages[id];
+      if (!m) return;
       if (!m.replies) m.replies = [];
       m.replies.push({
         message: res,
@@ -898,4 +902,8 @@ const port = process.env.PORT || 3000;
 
 server.listen(port, () => {
   console.log(`Listening on port ${port}`);
+});
+
+process.on("uncaughtException", (e) => {
+  console.log(e);
 });
