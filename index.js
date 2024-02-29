@@ -202,11 +202,11 @@ const getRules = (u, user) => {
 
 const getFormattedMessages = (messages, u, user) => {
   const fm = [];
-  if (user) fm.push({ role: "user", parts: ["What are your rules?"] }, { role: "model", parts: [getRules(u, user)] });
+  if (user) fm.push({ role: "user", parts: ["What are your rules?"] }, { role: "model", parts: [getRules(u, user), ""] });
   let currRole = user ? "model" : null;
   for (const m of messages) {
     const r = m.name == u.name ? "model" : "user";
-    const part = (r == "user" ? m.name + ": " : "") + m.message.replace("@" + u.name.replace(" ", "-"), "");
+    const part = (r == "user" ? m.name + " (" + m.date + "): " : "") + m.message;
     if (currRole == r) fm[fm.length - 1].parts.push(part);
     else {
       currRole = r;
@@ -752,7 +752,6 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
   const { room: r, id: id1 } = us;
   const { id: id2 } = aiUser;
   if (reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
-    aiUser.room = r;
     let prompt = imgUrl || message.replace("@" + aiUser.name.replace(" ", "-"), "");
     const messages = get("rooms")[r].messages;
     const m = structuredClone(messages).splice(-1)[0];
@@ -818,7 +817,7 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
           prev: m.replies[i - 1],
           i,
         });
-    } else sendMessage(res, aiUser, curr);
+    } else sendMessage(res, { room: r, ...aiUser }, curr);
   }
 };
 
