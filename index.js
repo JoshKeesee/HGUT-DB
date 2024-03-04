@@ -322,7 +322,7 @@ app.post("/p", (req, res) => {
 app.post("/user-data", (req, res) => {
   const id =
     profiles[Object.keys(profiles).find((k) => profiles[k].id == req.body.user)]
-      .name;
+      ?.name;
   const u = checkUser(id);
   if (!u) return res.status(201).json({ error: true });
   const cr = {};
