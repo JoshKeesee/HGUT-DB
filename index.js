@@ -571,6 +571,7 @@ io.of("chat").on("connection", (socket) => {
       removeUnusedFiles();
       const aiUser =
         profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
+      aiUser.room = socket.user.room;
       const fm = getFormattedMessages([], aiUser, socket.user);
       if (!typing[socket.user.room].includes(aiUser.id))
         typing[socket.user.room].push(aiUser.id);
@@ -582,6 +583,7 @@ io.of("chat").on("connection", (socket) => {
     const { isImage, message: m } = sendMessage(message, socket.user, curr);
     const aiUser =
       profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
+    aiUser.room = socket.user.room;
     const reply = message.includes("@" + aiUser.name.replace(" ", "-"));
     sendAIMessage(message, socket.user, reply, curr, isImage && m);
   };
@@ -650,6 +652,7 @@ io.of("chat").on("connection", (socket) => {
     const aiUser =
       profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     const reply = m.includes("@" + aiUser.name.replace(" ", "-"));
+    aiUser.room = socket.user.room;
     if (reply || r.messages[id].name == aiUser.name)
       sendAIMessage(message, socket.user, true, curr);
   });
@@ -756,6 +759,7 @@ io.of("chat").on("connection", (socket) => {
 
     const aiUser =
       profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
+    aiUser.room = socket.user.room;
     if (rooms[room].allowed.includes(aiUser.id) && newRoom) {
       const fm = getFormattedMessages([], aiUser, socket.user);
       if (!typing[socket.user.room].includes(aiUser.id))
@@ -868,10 +872,12 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
         "I'll try to generate an image for that",
         "I'll see what I can come up with",
       ];
+      aiUser.room = r;
       sendMessage(gis[Math.floor(Math.random() * gis.length)], aiUser, curr);
       setTyping();
       const res = await generateImage(prompt);
       setTyping(false);
+      aiUser.room = r;
       if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
       sendMessage(res, aiUser, curr);
       return;
