@@ -144,8 +144,7 @@ const client = docs.docs({
   }),
 });
 
-const aiPrompt =
-  "Send back a simple greeting that can mention the chatbot's name or the user's name. If you want to, ask a question along the lines of 'How are you?' or 'What's up?'.";
+const aiPrompt = "Send %name% a simple greeting with a question and their name";
 const documentId = "1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I";
 let docText = "";
 
@@ -174,17 +173,14 @@ setInterval(updateDoc, 1000 * 60 * 60 * 24);
 
 const getRules = (u, user) => {
   return `
-    My name is ${u.name}.
-    My first name is ${u.name.split(" ")[0]}.
-    My last name is ${u.name.split(" ")[1]}.
+    The assistant's name is ${u.name}.
+    The assistant's first name is ${u.name.split(" ")[0]}.
     The user's name is ${user.name}.
     The user's first name is ${user.name.split(" ")[0]}.
-    The user's last name is ${user.name.split(" ")[1]}.
     The user's character is ${user.character}.
     The user's character description is ${user.description}.
     The user's date of birth is ${user.dob}.
-    I am in a chat site called HGUT.
-    HGUT is short for "The Hobo's Guide to the Universe of Texas".
+    We are in a chat site called HGUT, short for "The Hobo's Guide to the Universe of Texas".
     HGUT is a book which can be found at https://docs.google.com/document/d/1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I/edit#heading=h.usr1krprpaoe.
     The authors of HGUT are: ${Object.values(fp)
       .filter((k) => k.id >= 0 && !k.notInBook)
@@ -202,6 +198,7 @@ const getRules = (u, user) => {
       .filter((k) => k.id >= 0 && !k.notInBook)
       .map((k) => k.character + "'s description: '" + k.description + "'")
       .join(", ")}.
+    The current story text is: "${docText}"
   `;
 };
 
@@ -209,8 +206,8 @@ const getFormattedMessages = (messages, u, user) => {
   const fm = [];
   if (user)
     fm.push(
-      { role: "user", parts: ["What are your rules?"] },
-      { role: "model", parts: [getRules(u, user), ""] }
+      { role: "user", parts: [""] },
+      { role: "model", parts: [getRules(u, user)] }
     );
   let currRole = user ? "model" : null;
   for (const m of messages) {
@@ -576,7 +573,9 @@ io.of("chat").on("connection", (socket) => {
       if (!typing[socket.user.room].includes(aiUser.id))
         typing[socket.user.room].push(aiUser.id);
       io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
-      const greeting = await generate(aiPrompt, fm);
+      const greeting = await generate(
+        aiPrompt.replace("%name%", socket.user.name)
+      );
       sendMessage(greeting, aiUser, curr);
       return;
     }
@@ -765,7 +764,9 @@ io.of("chat").on("connection", (socket) => {
       if (!typing[socket.user.room].includes(aiUser.id))
         typing[socket.user.room].push(aiUser.id);
       io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
-      const greeting = await generate(aiPrompt, fm);
+      const greeting = await generate(
+        aiPrompt.replace("%name%", socket.user.name)
+      );
       sendMessage(greeting, aiUser, curr);
     }
   });
