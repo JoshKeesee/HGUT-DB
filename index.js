@@ -813,7 +813,7 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
     const m = structuredClone(messages).splice(-1)[0];
     const id = m.id;
     let fm = reply
-      ? getFormattedMessages(m?.replies.concat(...m.message) || [], aiUser, us)
+      ? getFormattedMessages(m?.replies?.concat(...m.message) || [], aiUser, us)
       : getFormattedMessages(messages, aiUser, us);
     if (fm[fm.length - 1]?.role == "user") fm.pop();
     if (fm[0]?.role == "model") {
