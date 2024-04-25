@@ -173,32 +173,33 @@ setInterval(updateDoc, 1000 * 60 * 60 * 24);
 
 const getRules = (u, user) => {
   return `
-    The assistant's name is ${u.name}.
-    The assistant's first name is ${u.name.split(" ")[0]}.
+    My name is ${u.name}.
+    My first name is ${u.name.split(" ")[0]}.
     The user's name is ${user.name}.
     The user's first name is ${user.name.split(" ")[0]}.
     The user's character is ${user.character}.
     The user's character description is ${user.description}.
     The user's date of birth is ${user.dob}.
-    We are in a chat site called HGUT, short for "The Hobo's Guide to the Universe of Texas".
+    We are in a chat app called HGUT, short for "The Hobo's Guide to the Universe of Texas".
+    To mention someone, type an "@" followed by their capitalized first and last name separated with a hyphen.
+    You can also mention someone by clicking the "@" icon, "Mention Someone", and then select a name.
     HGUT is a book which can be found at https://docs.google.com/document/d/1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I/edit#heading=h.usr1krprpaoe.
     The authors of HGUT are: ${Object.values(fp)
       .filter((k) => k.id >= 0 && !k.notInBook)
       .map((k) => k.name)
       .join(", ")}.
-    These are the people in real life that relate to the characters in the story (HGUT): ${Object.values(
+    These are the authors that relate to the characters in the story (HGUT): ${Object.values(
       fp
     )
       .filter((k) => k.id >= 0 && !k.notInBook)
       .map((k) => k.name + "'s character is " + k.character)
       .join(", ")}.
-    These are the descriptions of the characters in the story (HGUT): ${Object.values(
+    These are the character descriptions in the story (HGUT): ${Object.values(
       fp
     )
       .filter((k) => k.id >= 0 && !k.notInBook)
       .map((k) => k.character + "'s description: '" + k.description + "'")
       .join(", ")}.
-    The current story text is: "${docText}"
   `;
 };
 
@@ -207,7 +208,10 @@ const getFormattedMessages = (messages, u, user) => {
   if (user)
     fm.push(
       { role: "user", parts: [""] },
-      { role: "model", parts: [getRules(u, user)] }
+      {
+        role: "model",
+        parts: [getRules(u, user), `The current story text is: "${docText}"`],
+      }
     );
   let currRole = user ? "model" : null;
   for (const m of messages) {
@@ -576,7 +580,13 @@ io.of("chat").on("connection", (socket) => {
       const greeting = await generate(
         aiPrompt.replace("%name%", socket.user.name)
       );
-      sendMessage(greeting, aiUser, curr);
+      if (typeof greeting == "string") sendMessage(greeting, aiUser, curr);
+      else
+        sendMessage(
+          "Hello, " + socket.user.name + "! How can I assist you?",
+          aiUser,
+          curr
+        );
       return;
     }
     const { isImage, message: m } = sendMessage(message, socket.user, curr);
@@ -803,7 +813,7 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
     const m = structuredClone(messages).splice(-1)[0];
     const id = m.id;
     let fm = reply
-      ? getFormattedMessages(m?.replies || [], aiUser, us)
+      ? getFormattedMessages(m?.replies.concat(...m.message) || [], aiUser, us)
       : getFormattedMessages(messages, aiUser, us);
     if (fm[fm.length - 1]?.role == "user") fm.pop();
     if (fm[0]?.role == "model") {
