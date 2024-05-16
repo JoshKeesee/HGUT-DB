@@ -1,4 +1,14 @@
 {
+  "Alpha Indigo": {
+    "name": "Alpha Indigo",
+    "character": "Alpha Indigo",
+    "dob": "???",
+    "profile": "profiles/Alpha Indigo.png",
+    "id": -2,
+    "color": "#00FFF7",
+    "password": "$2b$10$.G63CxtEoKBdU77JsZjf5elgTq28qgOMcKcUOMWZu6jW81KAJF1B6",
+    "hasPassword": true
+  },
   "Alfred Indigo": {
     "name": "Alfred Indigo",
     "character": "Alfred Indigo",
@@ -7,8 +17,7 @@
     "id": -1,
     "color": "#FF5733",
     "password": "$2b$10$.G63CxtEoKBdU77JsZjf5elgTq28qgOMcKcUOMWZu6jW81KAJF1B6",
-    "hasPassword": true,
-    "room": "2--1"
+    "hasPassword": true
   },
   "Hannah Gibson": {
     "name": "Hannah Gibson",

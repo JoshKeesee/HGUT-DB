@@ -7,3 +7,4 @@ node_modules
 files
 .github
 package-lock.json
+__pycache__

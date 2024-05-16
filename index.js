@@ -53,6 +53,7 @@ fs.writeFileSync("profiles.json", JSON.stringify(profiles, null, 2));
 const sounds = [];
 fs.readdirSync("./sounds").forEach((f) => sounds.push(f.split(".")[0]));
 const ioAuth = require("./io-auth");
+const spawn = require("child_process").spawn;
 const p = "./profiles";
 const im = "./files";
 const online = {},
@@ -145,6 +146,8 @@ const client = docs.docs({
 });
 
 const aiPrompt = "Send %name% a simple greeting with a question and their name";
+const alphaGreeting =
+  "Hey there, %name%! I'm Alpha Indigo, still in development. Ask me anything!";
 const documentId = "1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I";
 let docText = "";
 
@@ -230,6 +233,15 @@ const getFormattedMessages = (messages, u, user) => {
   return fm;
 };
 
+const getFormatAlphaMessages = (m) => {
+  return m.map((e) => {
+    e.role == "model" && (e.role = "assistant");
+    e.content = e.parts[0];
+    delete e.parts;
+    return e;
+  });
+};
+
 const fileToGenerativePart = (path, mimeType) => {
   return {
     inlineData: {
@@ -310,9 +322,31 @@ const generateImage = async (prompt, num = 1) => {
     const name = upload("data:" + data.type + ";base64," + file);
     return name;
   }
-  const json = await data.json();
-  console.log(json);
   return { error: "No image generated" };
+};
+
+let localServer = "http://127.0.0.1:5000";
+const AlphaIndigo = async (prompt, messages = [], max_tokens = 1000) => {
+  messages = getFormatAlphaMessages(messages);
+  messages.push({
+    role: "user",
+    content: prompt,
+  });
+  const data = await (
+    await fetch(localServer + "/generate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        messages,
+        max_tokens,
+      }),
+    })
+  ).json();
+  if (data["error"]) return { error: data["error"] };
+  else return data["response"];
 };
 
 app.use(express.json());
@@ -563,7 +597,13 @@ io.of("chat").on("connection", (socket) => {
 
   const msg = async (message) => {
     if (message == "/clear") {
-      if (socket.user.room != socket.user.id + "--1" || curr != "chat")
+      const bot =
+        socket.user.room == socket.user.id + "--1"
+          ? -1
+          : socket.user.room == socket.user.id + "--2"
+          ? -2
+          : 0;
+      if (bot == 0 || curr != "chat")
         return io.of(curr).to(socket.user.room).emit("cancel clear");
       const rooms = get("rooms");
       rooms[socket.user.room].messages = [];
@@ -571,15 +611,15 @@ io.of("chat").on("connection", (socket) => {
       io.of(curr).to(socket.user.room).emit("clear", socket.user);
       removeUnusedFiles();
       const aiUser =
-        profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
+        profiles[Object.keys(profiles).find((k) => profiles[k].id == bot)];
       aiUser.room = socket.user.room;
-      const fm = getFormattedMessages([], aiUser, socket.user);
       if (!typing[socket.user.room].includes(aiUser.id))
         typing[socket.user.room].push(aiUser.id);
       io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
-      const greeting = await generate(
-        aiPrompt.replace("%name%", socket.user.name)
-      );
+      const greeting =
+        bot == "-1"
+          ? await generate(aiPrompt.replace("%name%", socket.user.name))
+          : alphaGreeting.replace("%name%", socket.user.name.split(" ")[0]);
       if (typeof greeting == "string") sendMessage(greeting, aiUser, curr);
       else
         sendMessage(
@@ -590,11 +630,15 @@ io.of("chat").on("connection", (socket) => {
       return;
     }
     const { isImage, message: m } = sendMessage(message, socket.user, curr);
-    const aiUser =
+    let aiUser =
       profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     aiUser.room = socket.user.room;
-    const reply = message.includes("@" + aiUser.name.replace(" ", "-"));
-    sendAIMessage(message, socket.user, reply, curr, isImage && m);
+    let reply = message.includes("@" + aiUser.name.replace(" ", "-"));
+    sendAIMessage(message, socket.user, aiUser, reply, curr, isImage && m);
+    aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -2)];
+    aiUser.room = socket.user.room;
+    reply = message.includes("@" + aiUser.name.replace(" ", "-"));
+    sendAIMessage(message, socket.user, aiUser, reply, curr, isImage && m);
   };
 
   socket.on("chat message", msg);
@@ -657,13 +701,19 @@ io.of("chat").on("connection", (socket) => {
         i,
       });
 
+    const bot =
+      socket.user.room == socket.user.id + "--1"
+        ? -1
+        : socket.user.room == socket.user.id + "--2"
+        ? -2
+        : 0;
     const m = r.messages[id].message;
     const aiUser =
-      profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
+      profiles[Object.keys(profiles).find((k) => profiles[k].id == bot)];
     const reply = m.includes("@" + aiUser.name.replace(" ", "-"));
     aiUser.room = socket.user.room;
-    if (reply || r.messages[id].name == aiUser.name)
-      sendAIMessage(message, socket.user, true, curr);
+    if (reply || (r.messages[id].name == aiUser.name && bot != 0))
+      sendAIMessage(message, socket.user, aiUser, true, curr);
   });
 
   socket.on("delete", ({ id, profile, room }) => {
@@ -766,11 +816,10 @@ io.of("chat").on("connection", (socket) => {
       socket.user.unread,
     ]);
 
-    const aiUser =
+    let aiUser =
       profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     aiUser.room = socket.user.room;
     if (rooms[room].allowed.includes(aiUser.id) && newRoom) {
-      const fm = getFormattedMessages([], aiUser, socket.user);
       if (!typing[socket.user.room].includes(aiUser.id))
         typing[socket.user.room].push(aiUser.id);
       io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
@@ -779,6 +828,14 @@ io.of("chat").on("connection", (socket) => {
       );
       sendMessage(greeting, aiUser, curr);
     }
+    aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -2)];
+    aiUser.room = socket.user.room;
+    if (rooms[room].allowed.includes(aiUser.id) && newRoom)
+      sendMessage(
+        alphaGreeting.replace("%name%", socket.user.name.split(" ")[0]),
+        aiUser,
+        curr
+      );
   });
 
   socket.on("note start", (note) => {
@@ -800,10 +857,15 @@ const upload = (file) => {
   return name.replace(".", "");
 };
 
-const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
-  const aiUser = structuredClone(
-    profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)]
-  );
+const sendAIMessage = async (
+  message,
+  us,
+  aiUser,
+  reply,
+  curr,
+  imgUrl = false
+) => {
+  aiUser = structuredClone(aiUser);
   const { room: r, id: id1 } = us;
   const { id: id2 } = aiUser;
   if (reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
@@ -813,8 +875,12 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
     const m = structuredClone(messages).splice(-1)[0];
     const id = m.id;
     let fm = reply
-      ? getFormattedMessages(m?.replies?.concat(...m.message) || [], aiUser, us)
-      : getFormattedMessages(messages, aiUser, us);
+      ? getFormattedMessages(
+          m?.replies?.concat(...m.message) || [],
+          aiUser,
+          aiUser.id == -1 ? us : ""
+        )
+      : getFormattedMessages(messages, aiUser, aiUser.id == -1 ? us : "");
     if (fm[fm.length - 1]?.role == "user") fm.pop();
     if (fm[0]?.role == "model") {
       if (m.name != aiUser.name)
@@ -896,7 +962,9 @@ const sendAIMessage = async (message, us, reply, curr, imgUrl = false) => {
 
     setTyping();
 
-    const res = await generate(prompt, fm);
+    let res;
+    if (aiUser.id == -1) res = await generate(prompt, fm);
+    else res = await AlphaIndigo(prompt, fm);
     setTyping(false);
     if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
     if (reply) {
