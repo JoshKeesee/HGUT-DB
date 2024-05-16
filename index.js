@@ -701,18 +701,17 @@ io.of("chat").on("connection", (socket) => {
         i,
       });
 
-    const bot =
-      socket.user.room == socket.user.id + "--1"
-        ? -1
-        : socket.user.room == socket.user.id + "--2"
-        ? -2
-        : 0;
     const m = r.messages[id].message;
-    const aiUser =
-      profiles[Object.keys(profiles).find((k) => profiles[k].id == bot)];
-    const reply = m.includes("@" + aiUser.name.replace(" ", "-"));
+    let aiUser =
+      profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
+    let reply = m.includes("@" + aiUser.name.replace(" ", "-"));
     aiUser.room = socket.user.room;
-    if (reply || (r.messages[id].name == aiUser.name && bot != 0))
+    if (reply || r.messages[id].name == aiUser.name)
+      sendAIMessage(message, socket.user, aiUser, true, curr);
+    aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -2)];
+    reply = m.includes("@" + aiUser.name.replace(" ", "-"));
+    aiUser.room = socket.user.room;
+    if (reply || r.messages[id].name == aiUser.name)
       sendAIMessage(message, socket.user, aiUser, true, curr);
   });
 
