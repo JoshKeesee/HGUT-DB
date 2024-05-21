@@ -146,7 +146,7 @@ const client = docs.docs({
 });
 
 const aiPrompt = "Send %name% a simple greeting with a question and their name";
-const alphaGreeting =
+const alfredGreeting =
   "Hey there, %name%! I'm Alpha Indigo, still in development. Ask me anything!";
 const documentId = "1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I";
 let docText = "";
@@ -233,7 +233,7 @@ const getFormattedMessages = (messages, u, user) => {
   return fm;
 };
 
-const getFormatAlphaMessages = (m) => {
+const getFormatAlfredMessages = (m) => {
   return m.map((e) => {
     e.role == "model" && (e.role = "assistant");
     e.content = e.parts[0];
@@ -326,8 +326,8 @@ const generateImage = async (prompt, num = 1) => {
 };
 
 let localServer = "http://127.0.0.1:5000";
-const AlphaIndigo = async (prompt, messages = [], max_tokens = 1000) => {
-  messages = getFormatAlphaMessages(messages);
+const AlfredIndigo = async (prompt, messages = [], max_tokens = 1000) => {
+  messages = getFormatAlfredMessages(messages);
   messages.push({
     role: "user",
     content: prompt,
@@ -619,7 +619,7 @@ io.of("chat").on("connection", (socket) => {
       const greeting =
         bot == "-1"
           ? await generate(aiPrompt.replace("%name%", socket.user.name))
-          : alphaGreeting.replace("%name%", socket.user.name.split(" ")[0]);
+          : alfredGreeting.replace("%name%", socket.user.name.split(" ")[0]);
       if (typeof greeting == "string") sendMessage(greeting, aiUser, curr);
       else
         sendMessage(
@@ -831,7 +831,7 @@ io.of("chat").on("connection", (socket) => {
     aiUser.room = socket.user.room;
     if (rooms[room].allowed.includes(aiUser.id) && newRoom)
       sendMessage(
-        alphaGreeting.replace("%name%", socket.user.name.split(" ")[0]),
+        alfredGreeting.replace("%name%", socket.user.name.split(" ")[0]),
         aiUser,
         curr
       );
@@ -963,7 +963,7 @@ const sendAIMessage = async (
 
     let res;
     if (aiUser.id == -1) res = await generate(prompt, fm);
-    else res = await AlphaIndigo(prompt, fm);
+    else res = await AlfredIndigo(prompt, fm);
     setTyping(false);
     if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
     if (reply) {

@@ -19,13 +19,23 @@ class LLM(
         repo_url="https://github.com/JoshKeesee/Alfred-Indigo",
     ):
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers):
-        super().__init__()
+        super(LLM, self).__init__()
+
+        # Initialize LLM
+        self.vocab_size = vocab_size
+        self.embed_size = embed_size
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.dropout = nn.Dropout(0.1)
+        
         self.embedding = nn.Embedding(vocab_size, embed_size)
-        self.rnn = nn.GRU(embed_size, hidden_size, num_layers, batch_first=True)
+        self.gru = nn.GRU(embed_size, hidden_size, num_layers, dropout=(0.1 if num_layers > 1 else 0), batch_first=True)
         self.fc = nn.Linear(hidden_size, vocab_size)
 
     def forward(self, x):
+        # Forward pass
         x = self.embedding(x)
-        x, _ = self.rnn(x)
+        x = self.dropout(x)
+        x, _ = self.gru(x)
         x = self.fc(x)
         return x
