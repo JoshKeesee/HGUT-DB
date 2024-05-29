@@ -8,7 +8,12 @@
     "color": "#FF5733",
     "password": "$2b$10$.G63CxtEoKBdU77JsZjf5elgTq28qgOMcKcUOMWZu6jW81KAJF1B6",
     "hasPassword": true,
-    "room": "main"
+    "tags": [
+      {
+        "name": "Bot",
+        "color": "#006EFF"
+      }
+    ]
   },
   "Hannah Gibson": {
     "name": "Hannah Gibson",
@@ -51,6 +56,15 @@
       "🐒",
       "🙈",
       "🙉"
+    ],
+    "tags": [
+      {
+        "name": "I.T."
+      },
+      {
+        "name": "Admin",
+        "color": "#C21515"
+      }
     ]
   },
   "Abigail Pomicter": {
@@ -126,7 +140,12 @@
     "profile": "profiles/Sherman Magenta.webp",
     "id": 8,
     "color": "#00FF00",
-    "password": "$2b$10$qN6j6WkLxL7Lk9dLlP4LUO3sVj.X7412Pd/QJrROtkq.WnvplBJGa"
+    "password": "$2b$10$qN6j6WkLxL7Lk9dLlP4LUO3sVj.X7412Pd/QJrROtkq.WnvplBJGa",
+    "tags": [
+      {
+        "name": "Alt."
+      }
+    ]
   },
   "Madison Cramer": {
     "name": "Madison Cramer",

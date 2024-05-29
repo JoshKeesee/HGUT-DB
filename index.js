@@ -74,16 +74,6 @@ const setup = () => {
       messages: [],
       allowed: "all",
     },
-    eth: {
-      name: '"Eth"',
-      messages: [],
-      allowed: "all",
-    },
-    oldtimeycommunication: {
-      name: "Old Timey Communication",
-      messages: [],
-      allowed: [0, 2, 3, 6, 8],
-    },
   };
   if (!get("rooms")) set({ rooms: defaultRooms });
   if (!get("users")) set({ users: {} });
@@ -166,8 +156,8 @@ const updateDoc = async () => {
   console.log("Document updated: " + new Date().toLocaleString());
 };
 
-updateDoc();
-setInterval(updateDoc, 1000 * 60 * 60 * 24);
+// updateDoc();
+// setInterval(updateDoc, 1000 * 60 * 60 * 24);
 
 const getRules = (u, user) => {
   return `
