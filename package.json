@@ -1,24 +1,21 @@
 {
-  "name": "nodejs",
+  "name": "hgut-db",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "start": "python alfred-indigo.py & node index.js"
   },
-  "keywords": [],
-  "author": "",
+  "author": "JoshKeesee",
   "license": "ISC",
   "dependencies": {
-    "@google/generative-ai": "^0.2.0",
-    "@googleapis/docs": "^3.0.0",
+    "@googleapis/docs": "^3.0.2",
     "@jkeesee/json-db": "^3.0.7",
     "bcrypt": "^5.1.1",
-    "cookie": "^0.6.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2",
-    "web-push": "^3.6.6"
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5",
+    "web-push": "^3.6.7"
   }
 }

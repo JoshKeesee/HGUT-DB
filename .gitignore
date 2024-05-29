@@ -8,3 +8,5 @@ files
 .github
 package-lock.json
 __pycache__
+yarn-error.log
+yarn.lock

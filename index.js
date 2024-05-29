@@ -11,7 +11,6 @@ const io = require("socket.io")(server, {
 const { get, set } = require("./db");
 const checkUser = require("./check-user");
 const fs = require("fs");
-const path = require("path");
 const dotenv = require("dotenv");
 dotenv.config();
 const bcrypt = require("bcrypt");
@@ -53,7 +52,6 @@ fs.writeFileSync("profiles.json", JSON.stringify(profiles, null, 2));
 const sounds = [];
 fs.readdirSync("./sounds").forEach((f) => sounds.push(f.split(".")[0]));
 const ioAuth = require("./io-auth");
-const spawn = require("child_process").spawn;
 const p = "./profiles";
 const im = "./files";
 const online = {},
@@ -132,8 +130,6 @@ const removeUnusedFiles = () => {
 setup();
 removeUnusedFiles();
 
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const docs = require("@googleapis/docs");
 const mime = require("mime-types");
 
@@ -145,9 +141,8 @@ const client = docs.docs({
   }),
 });
 
-const aiPrompt = "Send %name% a simple greeting with a question and their name";
 const alfredGreeting =
-  "Hey there, %name%! I'm Alpha Indigo, still in development. Ask me anything!";
+  "Hey there, %name%! I'm Alfred Indigo, still in development. Ask me anything!";
 const documentId = "1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I";
 let docText = "";
 
@@ -206,104 +201,36 @@ const getRules = (u, user) => {
   `;
 };
 
-const getFormattedMessages = (messages, u, user) => {
+const formatMessages = (messages, u, user) => {
   const fm = [];
   if (user)
     fm.push(
-      { role: "user", parts: [""] },
+      { role: "user", content: "" },
       {
-        role: "model",
-        parts: [getRules(u, user), `The current story text is: "${docText}"`],
+        role: "assistant",
+        content: getRules(u, user),
       }
     );
-  let currRole = user ? "model" : null;
+  let currRole = user ? "assistant" : null;
   for (const m of messages) {
-    const r = m.name == u.name ? "model" : "user";
+    const r = m.name == u.name ? "assistant" : "user";
     const part =
       (r == "user" ? m.name + " (" + m.date + "): " : "") + m.message;
-    if (currRole == r) fm[fm.length - 1].parts.push(part);
+    if (currRole == r) fm[fm.length - 1].content = part;
     else {
       currRole = r;
       fm.push({
         role: currRole,
-        parts: [part],
+        content: part,
       });
     }
   }
   return fm;
 };
 
-const getFormatAlfredMessages = (m) => {
-  return m.map((e) => {
-    e.role == "model" && (e.role = "assistant");
-    e.content = e.parts[0];
-    delete e.parts;
-    return e;
-  });
-};
-
-const fileToGenerativePart = (path, mimeType) => {
-  return {
-    inlineData: {
-      data: Buffer.from(fs.readFileSync(path)).toString("base64"),
-      mimeType,
-    },
-  };
-};
-
-const generate = async (
-  prompt,
-  history = [],
-  stream = false,
-  fn = () => {}
-) => {
-  const img =
-    prompt.startsWith("/files/") &&
-    mime.lookup(prompt) &&
-    mime.lookup(prompt).includes("image");
-  const imgParts = [];
-  const model = genAI.getGenerativeModel({
-    model: img ? "gemini-pro-vision" : "gemini-1.0-pro-latest",
-  });
-  try {
-    if (img) {
-      const imgPath = prompt.replace("/files/", "files/");
-      imgParts.push(
-        fileToGenerativePart(
-          imgPath,
-          "image/" + path.extname(prompt).replace(".", "")
-        )
-      );
-      const result = await model.generateContent(["", ...imgParts]);
-      const response = await result.response;
-      const text = response.text();
-      return text;
-    }
-    const chat = model.startChat({ history });
-    if (stream) {
-      const result = await chat.sendMessageStream(prompt);
-      let text = "";
-      for await (const chunk of result.stream) {
-        const chunkText = chunk.text();
-        text += chunkText;
-        fn(chunkText);
-      }
-      return text;
-    }
-    const result = await chat.sendMessage(prompt);
-    const response = await result.response;
-    const text = response.text();
-    return text;
-  } catch (e) {
-    console.log(e);
-    return { error: e };
-  }
-};
-
 const generateImage = async (prompt, num = 1) => {
-  const raw = JSON.stringify({
-    inputs: prompt,
-  });
+  const modelId = "stabilityai/stable-diffusion-2-1";
+  const raw = JSON.stringify({ inputs: prompt });
   const reqOpts = {
     method: "POST",
     headers: {
@@ -312,7 +239,7 @@ const generateImage = async (prompt, num = 1) => {
     body: raw,
   };
   const res = await fetch(
-    "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+    `https://api-inference.huggingface.co/models/${modelId}`,
     reqOpts
   );
   const data = await res.blob();
@@ -327,7 +254,6 @@ const generateImage = async (prompt, num = 1) => {
 
 let localServer = "http://127.0.0.1:5000";
 const AlfredIndigo = async (prompt, messages = [], max_tokens = 1000) => {
-  messages = getFormatAlfredMessages(messages);
   messages.push({
     role: "user",
     content: prompt,
@@ -597,12 +523,7 @@ io.of("chat").on("connection", (socket) => {
 
   const msg = async (message) => {
     if (message == "/clear") {
-      const bot =
-        socket.user.room == socket.user.id + "--1"
-          ? -1
-          : socket.user.room == socket.user.id + "--2"
-          ? -2
-          : 0;
+      const bot = socket.user.room == socket.user.id + "--1" ? -1 : 0;
       if (bot == 0 || curr != "chat")
         return io.of(curr).to(socket.user.room).emit("cancel clear");
       const rooms = get("rooms");
@@ -618,8 +539,8 @@ io.of("chat").on("connection", (socket) => {
       io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
       const greeting =
         bot == "-1"
-          ? await generate(aiPrompt.replace("%name%", socket.user.name))
-          : alfredGreeting.replace("%name%", socket.user.name.split(" ")[0]);
+          ? alfredGreeting.replace("%name%", socket.user.name.split(" ")[0])
+          : "";
       if (typeof greeting == "string") sendMessage(greeting, aiUser, curr);
       else
         sendMessage(
@@ -634,10 +555,6 @@ io.of("chat").on("connection", (socket) => {
       profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     aiUser.room = socket.user.room;
     let reply = message.includes("@" + aiUser.name.replace(" ", "-"));
-    sendAIMessage(message, socket.user, aiUser, reply, curr, isImage && m);
-    aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -2)];
-    aiUser.room = socket.user.room;
-    reply = message.includes("@" + aiUser.name.replace(" ", "-"));
     sendAIMessage(message, socket.user, aiUser, reply, curr, isImage && m);
   };
 
@@ -705,11 +622,6 @@ io.of("chat").on("connection", (socket) => {
     let aiUser =
       profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     let reply = m.includes("@" + aiUser.name.replace(" ", "-"));
-    aiUser.room = socket.user.room;
-    if (reply || r.messages[id].name == aiUser.name)
-      sendAIMessage(message, socket.user, aiUser, true, curr);
-    aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -2)];
-    reply = m.includes("@" + aiUser.name.replace(" ", "-"));
     aiUser.room = socket.user.room;
     if (reply || r.messages[id].name == aiUser.name)
       sendAIMessage(message, socket.user, aiUser, true, curr);
@@ -818,17 +730,6 @@ io.of("chat").on("connection", (socket) => {
     let aiUser =
       profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     aiUser.room = socket.user.room;
-    if (rooms[room].allowed.includes(aiUser.id) && newRoom) {
-      if (!typing[socket.user.room].includes(aiUser.id))
-        typing[socket.user.room].push(aiUser.id);
-      io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
-      const greeting = await generate(
-        aiPrompt.replace("%name%", socket.user.name)
-      );
-      sendMessage(greeting, aiUser, curr);
-    }
-    aiUser = profiles[Object.keys(profiles).find((k) => profiles[k].id == -2)];
-    aiUser.room = socket.user.room;
     if (rooms[room].allowed.includes(aiUser.id) && newRoom)
       sendMessage(
         alfredGreeting.replace("%name%", socket.user.name.split(" ")[0]),
@@ -873,18 +774,16 @@ const sendAIMessage = async (
     const messages = get("rooms")[r].messages;
     const m = structuredClone(messages).splice(-1)[0];
     const id = m.id;
-    let fm = reply
-      ? getFormattedMessages(
-          m?.replies?.concat(...m.message) || [],
-          aiUser,
-          aiUser.id == -1 ? us : ""
-        )
-      : getFormattedMessages(messages, aiUser, aiUser.id == -1 ? us : "");
+    let fm = formatMessages(
+      reply ? m?.replies?.concat(...m.message) || [] : messages,
+      aiUser,
+      aiUser.id == -1 ? us : ""
+    );
     if (fm[fm.length - 1]?.role == "user") fm.pop();
-    if (fm[0]?.role == "model") {
+    if (fm[0]?.role == "assistant") {
       if (m.name != aiUser.name)
-        fm.unshift({ role: "user", parts: [m.name + ": " + m.message] });
-      else fm.unshift({ role: "user", parts: [m.name + ": "] });
+        fm.unshift({ role: "user", content: m.name + ": " + m.message });
+      else fm.unshift({ role: "user", content: m.name + ": " });
     }
 
     const setTyping = (t = true) => {
@@ -961,9 +860,7 @@ const sendAIMessage = async (
 
     setTyping();
 
-    let res;
-    if (aiUser.id == -1) res = await generate(prompt, fm);
-    else res = await AlfredIndigo(prompt, fm);
+    const res = await AlfredIndigo(prompt, fm);
     setTyping(false);
     if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
     if (reply) {
