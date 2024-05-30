@@ -320,17 +320,21 @@ app.post("/user-data", (req, res) => {
 app.post("/predict-text", async (req, res) => {
   const u = checkUser(req.body.user);
   if (!u) return res.status(201).json({ error: true });
-  const data = await (
-    await fetch(localServer + "/predict-text", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(req.body),
-    })
-  ).json();
-  res.status(201).json(data);
+  try {
+    const data = await (
+      await fetch(localServer + "/predict-text", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(req.body),
+      })
+    ).json();
+    res.status(201).json(data);
+  } catch (e) {
+    res.status(201).json({ error: true });
+  }
 });
 
 io.of("chat").use(ioAuth);

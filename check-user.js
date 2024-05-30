@@ -13,7 +13,7 @@ module.exports = (username) => {
     notifications: {},
     notificationSound: "Bounce",
     dontDisturb: false,
-    predictText: false,
+    predictText: true,
   };
   const user = {
     ...profiles[username],
