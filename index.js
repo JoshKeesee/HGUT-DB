@@ -219,7 +219,8 @@ const formatMessages = (messages, u, user) => {
 };
 
 const generateImage = async (prompt) => {
-  const modelId = "stabilityai/stable-diffusion-2-1";
+  console.log(prompt);
+  const modelId = "stabilityai/stable-diffusion-xl-base-1.0";
   const raw = JSON.stringify({ inputs: prompt });
   const reqOpts = {
     method: "POST",
@@ -801,7 +802,7 @@ const sendAIMessage = async (
       io.of(curr).to(r).emit("typing", typing[r]);
     };
 
-    const l = prompt.toLowerCase();
+    let l = prompt.toLowerCase();
     const gts = [
       "generate",
       "make",
@@ -860,7 +861,16 @@ const sendAIMessage = async (
       aiUser.room = r;
       sendMessage(gis[Math.floor(Math.random() * gis.length)], aiUser, curr);
       setTyping();
-      const res = await generateImage(prompt);
+      [...imgTerms, ...gts].forEach(
+        (e) =>
+          (l = l
+            .split(e + " of")
+            .at(-1)
+            .split(e)
+            .at(-1))
+      );
+      l = l.trim().replace(/\s+/g, " ");
+      const res = await generateImage(l);
       setTyping(false);
       aiUser.room = r;
       if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
