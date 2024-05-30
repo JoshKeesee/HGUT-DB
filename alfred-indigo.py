@@ -1,14 +1,30 @@
 import logging
+import click
+import warnings
 import sys
 from flask import Flask, request, jsonify
 import torch as pt
+from transformers import pipeline
 from assets.llm import LLM
 
 logging.disable(sys.maxsize)
+warnings.filterwarnings("ignore")
+logger = logging.getLogger("werkzeug")
+logger.setLevel(logging.ERROR)
+
+def secho(text, file=None, nl=None, err=None, color=None, **styles):
+    pass
+
+def echo(text, file=None, nl=None, err=None, color=None, **styles):
+    pass
+
+click.echo = echo
+click.secho = secho
 
 mp = "assets/Alfred-Indigo"
 ai = LLM.from_pretrained(mp).eval()
 t = pt.load(f"{mp}/tokenizer.pth")
+g = pipeline("text-generation")
 
 def generate(m,mt=1000):
     try:
@@ -32,5 +48,12 @@ def generate_api():
     mt=request.json["max_tokens"]
     return jsonify({"response":generate(m,mt)})
 
+@app.route("/predict-text", methods=["POST"])
+def predict_api():
+    m=request.json["text"]
+    mt=request.json["max_tokens"]
+    return jsonify({"response":g(m,return_full_text=False,max_new_tokens=mt)[0]["generated_text"]})
+
 if __name__ == "__main__":
+    print("AI server running on port 5000")
     app.run(port=5000)

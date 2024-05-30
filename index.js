@@ -224,7 +224,7 @@ const generateImage = async (prompt, num = 1) => {
   const reqOpts = {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${process.env.IMAGE_API_KEY}`,
+      Authorization: `Bearer ${process.env.HF_TOKEN}`,
     },
     body: raw,
   };
@@ -316,6 +316,21 @@ app.post("/user-data", (req, res) => {
     profiles: fp,
     rooms: cr,
   });
+});
+app.post("/predict-text", async (req, res) => {
+  const u = checkUser(req.body.user);
+  if (!u) return res.status(201).json({ error: true });
+  const data = await (
+    await fetch(localServer + "/predict-text", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(req.body),
+    })
+  ).json();
+  res.status(201).json(data);
 });
 
 io.of("chat").use(ioAuth);
