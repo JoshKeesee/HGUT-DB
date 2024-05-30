@@ -11,7 +11,7 @@ module.exports = (username) => {
     accent: true,
     emoji: true,
     notifications: {},
-    notificationSound: "Bounce",
+    notificationSound: "Chat",
     dontDisturb: false,
     predictText: true,
   };
