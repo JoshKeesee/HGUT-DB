@@ -219,7 +219,6 @@ const formatMessages = (messages, u, user) => {
 };
 
 const generateImage = async (prompt) => {
-  console.log(prompt);
   const modelId = "stabilityai/stable-diffusion-xl-base-1.0";
   const raw = JSON.stringify({ inputs: prompt });
   const reqOpts = {
@@ -842,6 +841,7 @@ const sendAIMessage = async (
       "portrait",
       "painting",
       "sketch",
+      "imagine an",
       "imagine a",
     ];
     const isImgPrompt =
@@ -851,16 +851,6 @@ const sendAIMessage = async (
     setTyping();
 
     if (isImgPrompt) {
-      const gis = [
-        "I'll try to create that",
-        "Sure, I'll give it a shot",
-        "I'll see what I can do",
-        "I'll try to generate an image for that",
-        "I'll see what I can come up with",
-      ];
-      aiUser.room = r;
-      sendMessage(gis[Math.floor(Math.random() * gis.length)], aiUser, curr);
-      setTyping();
       [...imgTerms, ...gts].forEach(
         (e) =>
           (l = l
@@ -870,6 +860,22 @@ const sendAIMessage = async (
             .at(-1))
       );
       l = l.trim().replace(/\s+/g, " ");
+      const gis = [
+        'No problem! I\'ll try to %gts% "%prompt%"',
+        'Sure, I\'ll see if I can %gts% "%prompt%"',
+        'I\'ll try to %gts% an image for "%prompt%"',
+        'I\'ll see what I can %gts% for "%prompt%"',
+        'A photo of "%prompt%", coming right up!',
+      ];
+      aiUser.room = r;
+      sendMessage(
+        gis[Math.floor(Math.random() * gis.length)]
+          .replaceAll("%prompt%", l)
+          .replaceAll("%gts%", gts[Math.floor(Math.random() * gts.length)]),
+        aiUser,
+        curr
+      );
+      setTyping();
       const res = await generateImage(l);
       setTyping(false);
       aiUser.room = r;
@@ -988,10 +994,6 @@ const sendMessage = (message, us, curr, p = false) => {
 
 const port = process.env.PORT || 3000;
 
-server.listen(port, () => {
-  console.log(`Listening on port ${port}`);
-});
+server.listen(port, () => console.log(`Listening on port ${port}`));
 
-process.on("uncaughtException", (e) => {
-  console.log(e);
-});
+process.on("uncaughtException", (e) => console.log(e));
