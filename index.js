@@ -218,7 +218,7 @@ const formatMessages = (messages, u, user) => {
   return fm;
 };
 
-const generateImage = async (prompt, num = 1) => {
+const generateImage = async (prompt) => {
   const modelId = "stabilityai/stable-diffusion-2-1";
   const raw = JSON.stringify({ inputs: prompt });
   const reqOpts = {
@@ -829,7 +829,6 @@ const sendAIMessage = async (
       "come up with",
       "devise",
       "think up",
-      "image of",
     ];
     const imgTerms = [
       "image",
@@ -842,9 +841,11 @@ const sendAIMessage = async (
       "portrait",
       "painting",
       "sketch",
+      "imagine a",
     ];
     const isImgPrompt =
-      gts.some((e) => l.includes(e)) && imgTerms.some((e) => l.includes(e));
+      (gts.some((e) => l.includes(e)) && imgTerms.some((e) => l.includes(e))) ||
+      imgTerms.some((e) => l.includes(e + " of"));
 
     setTyping();
 
