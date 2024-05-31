@@ -336,6 +336,22 @@ app.post("/predict-text", async (req, res) => {
     res.status(201).json({ error: true });
   }
 });
+app.post("/login", async (req, res) => {
+  const username = req.body["name"];
+  const password = req.body["password"];
+  const ac = req.body["access-code"];
+  if (!username) return res.json({ error: "Please enter a username" });
+  if (!password) return res.json({ error: "Please enter a password" });
+  if (!ac) return res.json({ error: "Please enter an access code" });
+  if (!bcrypt.compareSync(ac, accessCode))
+    return res.json({ error: "Invalid access code" });
+  if (!profiles[username]) return res.json({ error: "Invalid username" });
+  if (profiles[username].id < 0) return res.json({ error: "Invalid username" });
+  const p = profiles[username].password;
+  if (!bcrypt.compareSync(password, p))
+    return res.json({ error: "Invalid password" });
+  res.json({ success: true, user: username, redirect: "/chat.html" });
+});
 
 io.of("chat").use(ioAuth);
 io.of("voice").use(ioAuth);
