@@ -219,7 +219,7 @@ const formatMessages = (messages, u, user) => {
 };
 
 const generateImage = async (prompt) => {
-  const modelId = "stabilityai/stable-diffusion-xl-base-1.0";
+  const modelId = "sd-community/sdxl-flash";
   const raw = JSON.stringify({ inputs: prompt });
   const reqOpts = {
     method: "POST",
@@ -350,7 +350,7 @@ app.post("/login", async (req, res) => {
   const p = profiles[username].password;
   if (!bcrypt.compareSync(password, p))
     return res.json({ error: "Invalid password" });
-  res.json({ success: true, user: username, redirect: "/chat.html" });
+  res.json({ success: true, user: username, redirect: "/chat" });
 });
 
 io.of("chat").use(ioAuth);
