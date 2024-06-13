@@ -219,8 +219,6 @@ const formatMessages = (messages, u, user) => {
 };
 
 const generateImage = async (prompt) => {
-  const s = await stability(prompt);
-  if (!s.error) return s;
   const modelId = "sd-community/sdxl-flash";
   const raw = JSON.stringify({ inputs: prompt });
   const reqOpts = {
@@ -242,36 +240,6 @@ const generateImage = async (prompt) => {
     return name;
   }
   return { error: "No image generated" };
-};
-
-const stability = async (prompt, aspect_ratio = "1:1") => {
-  const p = "https://api.stability.ai/v2beta/stable-image/generate/ultra";
-  const raw = {
-    prompt,
-    output_format: "png",
-    aspect_ratio,
-  };
-  const body = new FormData();
-  for (let k in raw) body.append(k, raw[k]);
-  const reqOpts = {
-    method: "POST",
-    validateStatus: undefined,
-    responseType: "arrayBuffer",
-    headers: {
-      Accept: "image/*",
-      Authorization: `Bearer ${process.env.STABILITY_TOKEN}`,
-    },
-    body,
-  };
-  const res = await fetch(p, reqOpts);
-  if (res.status == 200) {
-    const data = await res.arrayBuffer();
-    const file = Buffer.from(data).toString("base64");
-    const name = upload(`data:image/${raw.output_format || "png"};base64,${file}`);
-    return name;
-  }
-  const data = await res.json();
-  return { error: data.errors[0] };
 };
 
 let localServer = "http://127.0.0.1:5000";
