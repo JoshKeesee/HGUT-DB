@@ -218,30 +218,6 @@ const formatMessages = (messages, u, user) => {
   return fm;
 };
 
-const generateImage = async (prompt) => {
-  const modelId = "sd-community/sdxl-flash";
-  const raw = JSON.stringify({ inputs: prompt });
-  const reqOpts = {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.HF_TOKEN}`,
-    },
-    body: raw,
-  };
-  const res = await fetch(
-    `https://api-inference.huggingface.co/models/${modelId}`,
-    reqOpts
-  );
-  const data = await res.blob();
-  const buffer = await data.arrayBuffer();
-  if (buffer.byteLength > 0 && data.type.includes("image")) {
-    const file = Buffer.from(buffer).toString("base64");
-    const name = upload("data:" + data.type + ";base64," + file);
-    return name;
-  }
-  return { error: "No image generated" };
-};
-
 let localServer = "http://127.0.0.1:5000";
 const AlfredIndigo = async (prompt, messages = [], max_tokens = 1000) => {
   messages.push({
@@ -263,6 +239,22 @@ const AlfredIndigo = async (prompt, messages = [], max_tokens = 1000) => {
   ).json();
   if (data["error"]) return { error: data["error"] };
   else return data["response"];
+};
+const generateContent = async (prompt, type = "image") => {
+  const data = await (
+    await fetch(localServer + `/generate-${type}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ prompt }),
+    })
+  ).json();
+  if (data["error"]) {
+    console.log(data["error"]);
+    return { error: data["error"] };
+  } else return data["response"];
 };
 
 app.use(express.json());
@@ -857,17 +849,34 @@ const sendAIMessage = async (
       "portrait",
       "painting",
       "sketch",
-      "imagine an",
-      "imagine a",
+      "imagine an ",
+      "imagine a ",
     ];
+    const audioTerms = [
+      "audio",
+      "music",
+      "sfx",
+      "sound effect",
+      "sound",
+      "effect",
+      "song",
+    ];
+    const isAudioPrompt =
+      (gts.some((e) => l.includes(e)) &&
+        audioTerms.some((e) => l.includes(e))) ||
+      audioTerms.some((e) => l.includes(e + " of"));
     const isImgPrompt =
-      (gts.some((e) => l.includes(e)) && imgTerms.some((e) => l.includes(e))) ||
-      imgTerms.some((e) => l.includes(e + " of"));
+      !isAudioPrompt &&
+      ((gts.some((e) => l.includes(e)) &&
+        imgTerms.some((e) => l.includes(e))) ||
+        imgTerms.some((e) => l.includes(e + " of")));
 
     setTyping();
 
-    if (isImgPrompt) {
-      [...imgTerms, ...gts].forEach(
+    if (isImgPrompt || isAudioPrompt) {
+      const q = isImgPrompt ? imgTerms : isAudioPrompt ? audioTerms : [];
+      const t = isImgPrompt ? "An image" : isAudioPrompt ? "Audio" : "";
+      [...(isImgPrompt ? gts : []), ...gts].forEach(
         (e) =>
           (l = l
             .split(e + " of")
@@ -879,20 +888,25 @@ const sendAIMessage = async (
       const gis = [
         'No problem! I\'ll try to %gts% "%prompt%"',
         'Sure, I\'ll see if I can %gts% "%prompt%"',
-        'I\'ll try to %gts% an image for "%prompt%"',
+        'I\'ll try to %gts% %type-l% for "%prompt%"',
         'I\'ll see what I can %gts% for "%prompt%"',
-        'A photo of "%prompt%", coming right up!',
+        '%type% of "%prompt%", coming right up!',
       ];
       aiUser.room = r;
       sendMessage(
         gis[Math.floor(Math.random() * gis.length)]
           .replaceAll("%prompt%", l)
-          .replaceAll("%gts%", gts[Math.floor(Math.random() * gts.length)]),
+          .replaceAll("%gts%", gts[Math.floor(Math.random() * gts.length)])
+          .replaceAll("%type-l%", t.toLowerCase())
+          .replaceAll("%type%", t),
         aiUser,
         curr
       );
       setTyping();
-      const res = await generateImage(l);
+      const res = await generateContent(
+        l,
+        isImgPrompt ? "image" : isAudioPrompt ? "audio" : ""
+      );
       setTyping(false);
       aiUser.room = r;
       if (res.error) return io.of(curr).to(r).emit("ai error", res.error);

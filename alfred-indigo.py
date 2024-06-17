@@ -1,3 +1,5 @@
+import shutil
+import time
 import logging
 import click
 import warnings
@@ -5,6 +7,7 @@ import sys
 from flask import Flask, request, jsonify
 import torch as pt
 from transformers import pipeline
+from gradio_client import Client
 from assets.llm import LLM
 
 logging.disable(sys.maxsize)
@@ -25,6 +28,8 @@ mp = "assets/Alfred-Indigo"
 ai = LLM.from_pretrained(mp).eval()
 t = pt.load(f"{mp}/tokenizer.pth")
 g = pipeline("text-generation")
+i = Client("sourceoftruthdata/Stable-Diffusion-3")
+a = Client("artificialguybr/Stable-Audio-Open-Zero")
 
 def generate(m,mt=1000):
     try:
@@ -47,6 +52,34 @@ def generate_api():
     m=request.json["messages"]
     mt=request.json["max_tokens"]
     return jsonify({"response":generate(m,mt)})
+
+@app.route("/generate-image", methods=["POST"])
+def generate_image_api():
+    try:
+        m=request.json["prompt"]
+        r=i.predict(
+            prompt=m,
+            api_name="/run"
+        )[0]["image"]
+        fp=f"files/{round(time.time()*1000)}.{r.split('.')[-1]}"
+        shutil.move(r,fp)
+        return jsonify({"response":f"/{fp}"})
+    except Exception as e:return jsonify({"error":str(e)})
+
+@app.route("/generate-audio", methods=["POST"])
+def generate_audio_api():
+    try:
+        m=request.json["prompt"]
+        r=a.predict(
+            prompt=m,
+            seconds_total=47,
+		    steps=150,
+            api_name="/predict"
+        )
+        fp=f"files/{round(time.time()*1000)}.{r.split('.')[-1]}"
+        shutil.move(r,fp)
+        return jsonify({"response":f"/{fp}"})
+    except Exception as e:return jsonify({"error":str(e)})
 
 @app.route("/predict-text", methods=["POST"])
 def predict_api():
