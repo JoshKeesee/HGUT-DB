@@ -1,3 +1,4 @@
+import os
 import shutil
 import time
 import logging
@@ -28,8 +29,9 @@ mp = "assets/Alfred-Indigo"
 ai = LLM.from_pretrained(mp).eval()
 t = pt.load(f"{mp}/tokenizer.pth")
 g = pipeline("text-generation")
-i = Client("sourceoftruthdata/Stable-Diffusion-3")
-a = Client("artificialguybr/Stable-Audio-Open-Zero")
+i = Client("sourceoftruthdata/Stable-Diffusion-3", hf_token=os.getenv("HF_TOKEN"))
+a = Client("artificialguybr/Stable-Audio-Open-Zero", hf_token=os.getenv("HF_TOKEN"))
+v = Client("KingNish/Instant-Video", hf_token=os.getenv("HF_TOKEN"))
 
 def generate(m,mt=1000):
     try:
@@ -76,6 +78,20 @@ def generate_audio_api():
 		    steps=150,
             api_name="/predict"
         )
+        fp=f"files/{round(time.time()*1000)}.{r.split('.')[-1]}"
+        shutil.move(r,fp)
+        return jsonify({"response":f"/{fp}"})
+    except Exception as e:return jsonify({"error":str(e)})
+
+@app.route("/generate-video", methods=["POST"])
+def generate_video_api():
+    try:
+        m=request.json["prompt"]
+        r=v.predict(
+            prompt=m,
+            motion="",
+            api_name="/generate_image"
+        )["video"]
         fp=f"files/{round(time.time()*1000)}.{r.split('.')[-1]}"
         shutil.move(r,fp)
         return jsonify({"response":f"/{fp}"})

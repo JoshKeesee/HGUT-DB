@@ -251,10 +251,8 @@ const generateContent = async (prompt, type = "image") => {
       body: JSON.stringify({ prompt }),
     })
   ).json();
-  if (data["error"]) {
-    console.log(data["error"]);
-    return { error: data["error"] };
-  } else return data["response"];
+  if (data["error"]) return { error: data["error"] };
+  else return data["response"];
 };
 
 app.use(express.json());
@@ -861,11 +859,17 @@ const sendAIMessage = async (
       "effect",
       "song",
     ];
+    const videoTerms = ["video", "gif", "animation", "cartoon"];
+    const isVideoPrompt =
+      (gts.some((e) => l.includes(e)) &&
+        videoTerms.some((e) => l.includes(e))) ||
+      videoTerms.some((e) => l.includes(e + " of"));
     const isAudioPrompt =
       (gts.some((e) => l.includes(e)) &&
         audioTerms.some((e) => l.includes(e))) ||
       audioTerms.some((e) => l.includes(e + " of"));
     const isImgPrompt =
+      !isVideoPrompt &&
       !isAudioPrompt &&
       ((gts.some((e) => l.includes(e)) &&
         imgTerms.some((e) => l.includes(e))) ||
@@ -873,10 +877,22 @@ const sendAIMessage = async (
 
     setTyping();
 
-    if (isImgPrompt || isAudioPrompt) {
-      const q = isImgPrompt ? imgTerms : isAudioPrompt ? audioTerms : [];
-      const t = isImgPrompt ? "An image" : isAudioPrompt ? "Audio" : "";
-      [...(isImgPrompt ? gts : []), ...gts].forEach(
+    if (isImgPrompt || isAudioPrompt || isVideoPrompt) {
+      const q = isImgPrompt
+        ? imgTerms
+        : isAudioPrompt
+        ? audioTerms
+        : isVideoPrompt
+        ? videoTerms
+        : [];
+      const t = isImgPrompt
+        ? "An image"
+        : isAudioPrompt
+        ? "Audio"
+        : isVideoPrompt
+        ? "A video"
+        : "";
+      [...(!isAudioPrompt ? q : []), ...gts].forEach(
         (e) =>
           (l = l
             .split(e + " of")
@@ -905,7 +921,13 @@ const sendAIMessage = async (
       setTyping();
       const res = await generateContent(
         l,
-        isImgPrompt ? "image" : isAudioPrompt ? "audio" : ""
+        isImgPrompt
+          ? "image"
+          : isAudioPrompt
+          ? "audio"
+          : isVideoPrompt
+          ? "video"
+          : ""
       );
       setTyping(false);
       aiUser.room = r;
