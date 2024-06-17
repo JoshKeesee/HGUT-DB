@@ -1,6 +1,6 @@
 {
-  "embed_size": 256,
-  "hidden_size": 512,
+  "embed_size": 128,
+  "hidden_size": 128,
   "num_layers": 2,
-  "vocab_size": 1978
+  "vocab_size": 2020
 }
