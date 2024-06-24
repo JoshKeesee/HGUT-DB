@@ -43,14 +43,13 @@
     "emojis": [
       "💖"
     ],
-    "password": "$2b$10$mdIT8hkyo2vABgPbfxGITu1TD4Gp5jZRY80cuen0aSzgSyFMp9KDG",
-    "hasPassword": true,
     "tags": [
       {
         "name": "Lobster",
         "color": "#804008"
       }
-    ]
+    ],
+    "password": "$2b$10$M2R0FIOLtwLfw6O1j.MsEuRiSNSVIEfzDaMu9elHbUAEAW90nKy9e"
   },
   "Joshua Keesee": {
     "name": "Joshua Keesee",

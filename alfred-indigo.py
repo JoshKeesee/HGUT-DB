@@ -31,7 +31,7 @@ t = pt.load(f"{mp}/tokenizer.pth")
 g = pipeline("text-generation")
 i = Client("sourceoftruthdata/Stable-Diffusion-3", hf_token=os.getenv("HF_TOKEN"))
 a = Client("artificialguybr/Stable-Audio-Open-Zero", hf_token=os.getenv("HF_TOKEN"))
-v = Client("KingNish/Instant-Video", hf_token=os.getenv("HF_TOKEN"))
+v = Client("Nymbo/Instant-Video", hf_token=os.getenv("HF_TOKEN"))
 
 def generate(m,mt=1000):
     try:
