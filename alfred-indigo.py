@@ -29,7 +29,7 @@ mp = "assets/Alfred-Indigo"
 ai = LLM.from_pretrained(mp).eval()
 t = pt.load(f"{mp}/tokenizer.pth")
 g = pipeline("text-generation")
-i = Client("sourceoftruthdata/Stable-Diffusion-3", hf_token=os.getenv("HF_TOKEN"))
+i = Client("prithivMLmods/IMAGINEO-4K", hf_token=os.getenv("HF_TOKEN"))
 a = Client("artificialguybr/Stable-Audio-Open-Zero", hf_token=os.getenv("HF_TOKEN"))
 v = Client("Nymbo/Instant-Video", hf_token=os.getenv("HF_TOKEN"))
 
@@ -61,8 +61,11 @@ def generate_image_api():
         m=request.json["prompt"]
         r=i.predict(
             prompt=m,
+            style="HD+",
+            filter_name="Zero filter",
+            grid_size="1x1",
             api_name="/run"
-        )[0]["image"]
+        )[0][0]["image"]
         fp=f"files/{round(time.time()*1000)}.{r.split('.')[-1]}"
         shutil.move(r,fp)
         return jsonify({"response":f"/{fp}"})
