@@ -6,10 +6,9 @@ import click
 import warnings
 import sys
 from flask import Flask, request, jsonify
-import torch as pt
 from transformers import pipeline
 from gradio_client import Client
-from assets.llm import LLM
+from assets.model import Model
 
 logging.disable(sys.maxsize)
 warnings.filterwarnings("ignore")
@@ -26,26 +25,11 @@ click.echo = echo
 click.secho = secho
 
 mp = "assets/Alfred-Indigo"
-ai = LLM.from_pretrained(mp).eval()
-t = pt.load(f"{mp}/tokenizer.pth")
+ai = Model()
 g = pipeline("text-generation")
-i = Client("sourceoftruthdata/Stable-Diffusion-3", hf_token=os.getenv("HF_TOKEN"))
+i = Client("Nymbo/Stable-Diffusion-3", hf_token=os.getenv("HF_TOKEN"))
 a = Client("artificialguybr/Stable-Audio-Open-Zero", hf_token=os.getenv("HF_TOKEN"))
 v = Client("Nymbo/Instant-Video", hf_token=os.getenv("HF_TOKEN"))
-
-def generate(m,mt=1000):
-    try:
-        d=pt.device("cuda" if pt.cuda.is_available() else "cpu")
-        p=t.apply_chat_template(m,add_generation_prompt=True)
-        with pt.no_grad():
-            o=pt.tensor(t.encode(p)).unsqueeze(0).to(d)
-            for _ in range(mt):
-                n=pt.multinomial(pt.nn.functional.softmax(ai(o)[0,-1],dim=0),1).item()
-                o=pt.cat([o,pt.tensor([[n]]).to(d)],dim=1)
-                if t.decode([n])==t.custom_tokens[3]:break
-            o=t.decode(o.squeeze().tolist(),response_only=True)
-            return o
-    except Exception as e:return{"error":str(e)}
 
 app = Flask(__name__)
 
@@ -53,7 +37,7 @@ app = Flask(__name__)
 def generate_api():
     m=request.json["messages"]
     mt=request.json["max_tokens"]
-    return jsonify({"response":generate(m,mt)})
+    return jsonify({"response":ai.generate(m,mt)})
 
 @app.route("/generate-image", methods=["POST"])
 def generate_image_api():

@@ -1,4 +1,6 @@
 import re
+import json
+
 
 class Tokenizer:
     def __init__(self, vocab, custom_tokens=[]):
@@ -22,7 +24,7 @@ class Tokenizer:
         text = text.split(
             self.custom_tokens[2])[-1].split(self.custom_tokens[3])[0].strip() if response_only else text
         return text
-    
+
     def apply_chat_template(self, messages, add_generation_prompt=False):
         text = "<|start-conversation|> "
         last_role = "system"
@@ -35,3 +37,22 @@ class Tokenizer:
         if add_generation_prompt:
             text += "<|start-assistant|> "
         return text
+    
+    def get_vocab_size(self):
+        return len(self.str_to_int)
+    
+    def save(self, file_path):
+        config = {
+            "str_to_int": self.str_to_int,
+            "int_to_str": self.int_to_str,
+            "custom_tokens": self.custom_tokens
+        }
+        with open(file_path, "w") as f:
+            json.dump(config, f, indent=4)
+        print(f"Tokenizer configuration saved to {file_path}")
+
+    @classmethod
+    def load(cls, file_path):
+        with open(file_path, "r") as f:
+            config = json.load(f)
+        return cls(config["str_to_int"], config.get("custom_tokens", []))
