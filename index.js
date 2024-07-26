@@ -131,8 +131,6 @@ const client = docs.docs({
   }),
 });
 
-const alfredGreeting =
-  "Hey there, %name%! I'm Alfred Indigo, still in development. Ask me anything!";
 const documentId = "1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I";
 let docText = "";
 
@@ -306,25 +304,6 @@ app.post("/user-data", (req, res) => {
     profiles: fp,
     rooms: cr,
   });
-});
-app.post("/predict-text", async (req, res) => {
-  const u = checkUser(req.body.user);
-  if (!u) return res.status(201).json({ error: true });
-  try {
-    const data = await (
-      await fetch(localServer + "/predict-text", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(req.body),
-      })
-    ).json();
-    res.status(201).json(data);
-  } catch (e) {
-    res.status(201).json({ error: true });
-  }
 });
 app.post("/login", async (req, res) => {
   const username = req.body["name"];
@@ -546,23 +525,6 @@ io.of("chat").on("connection", (socket) => {
       set({ rooms });
       io.of(curr).to(socket.user.room).emit("clear", socket.user);
       removeUnusedFiles();
-      const aiUser =
-        profiles[Object.keys(profiles).find((k) => profiles[k].id == bot)];
-      aiUser.room = socket.user.room;
-      if (!typing[socket.user.room].includes(aiUser.id))
-        typing[socket.user.room].push(aiUser.id);
-      io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
-      const greeting =
-        bot == "-1"
-          ? alfredGreeting.replace("%name%", socket.user.name.split(" ")[0])
-          : "";
-      if (typeof greeting == "string") sendMessage(greeting, aiUser, curr);
-      else
-        sendMessage(
-          "Hello, " + socket.user.name + "! How can I assist you?",
-          aiUser,
-          curr
-        );
       return;
     }
     const { isImage, message: m } = sendMessage(message, socket.user, curr);
@@ -690,7 +652,6 @@ io.of("chat").on("connection", (socket) => {
 
   socket.on("join room", async (room, mm = initMessages) => {
     const rooms = get("rooms");
-    let newRoom = false;
     if (!rooms[room]) {
       const u = room
         .replace("-", ",")
@@ -741,16 +702,6 @@ io.of("chat").on("connection", (socket) => {
       room,
       socket.user.unread,
     ]);
-
-    let aiUser =
-      profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
-    aiUser.room = socket.user.room;
-    if (rooms[room].allowed.includes(aiUser.id) && newRoom)
-      sendMessage(
-        alfredGreeting.replace("%name%", socket.user.name.split(" ")[0]),
-        aiUser,
-        curr
-      );
   });
 
   socket.on("note start", (note) => {

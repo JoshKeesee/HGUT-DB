@@ -8,6 +8,7 @@ import sys
 from flask import Flask, request, jsonify
 from transformers import pipeline
 from gradio_client import Client
+from huggingface_hub import InferenceClient
 from assets.model import Model
 
 logging.disable(sys.maxsize)
@@ -25,8 +26,7 @@ click.echo = echo
 click.secho = secho
 
 mp = "assets/Alfred-Indigo"
-ai = Model()
-g = pipeline("text-generation")
+c = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct", token=os.getenv("HF_TOKEN"))
 i = Client("Nymbo/Stable-Diffusion-3", hf_token=os.getenv("HF_TOKEN"))
 a = Client("artificialguybr/Stable-Audio-Open-Zero", hf_token=os.getenv("HF_TOKEN"))
 v = Client("Nymbo/Instant-Video", hf_token=os.getenv("HF_TOKEN"))
@@ -35,9 +35,15 @@ app = Flask(__name__)
 
 @app.route("/generate", methods=["POST"])
 def generate_api():
-    m=request.json["messages"]
-    mt=request.json["max_tokens"]
-    return jsonify({"response":ai.generate(m,mt)})
+    try:
+        m=request.json["messages"]
+        mt=request.json["max_tokens"]
+        r=c.chat_completion(
+            messages=m,
+            max_tokens=mt
+        )
+        return jsonify({"response":r.choices[0].message.content})
+    except Exception as e:return jsonify({"error":str(e)})
 
 @app.route("/generate-image", methods=["POST"])
 def generate_image_api():
@@ -80,12 +86,6 @@ def generate_video_api():
         shutil.move(r,fp)
         return jsonify({"response":f"/{fp}"})
     except Exception as e:return jsonify({"error":str(e)})
-
-@app.route("/predict-text", methods=["POST"])
-def predict_api():
-    m=request.json["text"]
-    mt=request.json["max_tokens"]
-    return jsonify({"response":g(m,return_full_text=False,max_new_tokens=mt)[0]["generated_text"]})
 
 if __name__ == "__main__":
     print("AI server running on port 5000")
