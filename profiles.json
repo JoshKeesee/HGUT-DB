@@ -14,7 +14,8 @@
         "color": "#006EFF"
       }
     ],
-    "room": "main"
+    "room": "main",
+    "gender": "bot"
   },
   "Hannah Gibson": {
     "name": "Hannah Gibson",
@@ -30,7 +31,8 @@
       {
         "name": "Certified Head-Kicker"
       }
-    ]
+    ],
+    "gender": "female"
   },
   "Liam Keesee": {
     "name": "Liam Keesee",
@@ -49,7 +51,8 @@
         "color": "#804008"
       }
     ],
-    "password": "$2b$10$M2R0FIOLtwLfw6O1j.MsEuRiSNSVIEfzDaMu9elHbUAEAW90nKy9e"
+    "password": "$2b$10$M2R0FIOLtwLfw6O1j.MsEuRiSNSVIEfzDaMu9elHbUAEAW90nKy9e",
+    "gender": "male"
   },
   "Joshua Keesee": {
     "name": "Joshua Keesee",
@@ -76,7 +79,8 @@
         "name": "Admin",
         "color": "#C21515"
       }
-    ]
+    ],
+    "gender": "male"
   },
   "Abigail Pomicter": {
     "name": "Abigail Pomicter",
@@ -93,7 +97,8 @@
         "name": "Alien",
         "color": "#3bff0a"
       }
-    ]
+    ],
+    "gender": "female"
   },
   "Kyla Lents": {
     "name": "Kyla Lents",
@@ -103,7 +108,8 @@
     "profile": "profiles/Kyla Lents.jpeg",
     "id": 4,
     "color": "#FFC0CB",
-    "password": "$2b$10$OHtDIPt0vrRzSvu5iIRjUuHFgZnDv77cmZVopaTUBVmozSh5q7/Xe"
+    "password": "$2b$10$OHtDIPt0vrRzSvu5iIRjUuHFgZnDv77cmZVopaTUBVmozSh5q7/Xe",
+    "gender": "female"
   },
   "Marcus Johnson": {
     "name": "Marcus Johnson",
@@ -113,7 +119,8 @@
     "profile": "",
     "id": 5,
     "color": "#808080",
-    "password": "$2b$10$fr6UFvQFNAF0v56FToXMgOMUIvtat.z/46s1hdlBAIlYtMzIGPEKO"
+    "password": "$2b$10$fr6UFvQFNAF0v56FToXMgOMUIvtat.z/46s1hdlBAIlYtMzIGPEKO",
+    "gender": "male"
   },
   "Miranda Gibson": {
     "name": "Miranda Gibson",
@@ -128,7 +135,8 @@
     "emojis": [
       "🧐",
       "🥸"
-    ]
+    ],
+    "gender": "female"
   },
   "Liliana Cramer": {
     "name": "Liliana Cramer",
@@ -146,7 +154,8 @@
       "😉",
       "🦕",
       "🐌"
-    ]
+    ],
+    "gender": "female"
   },
   "Sherman Magenta": {
     "name": "Sherman Magenta",
@@ -162,7 +171,8 @@
       {
         "name": "Alt."
       }
-    ]
+    ],
+    "gender": "female"
   },
   "Madison Cramer": {
     "name": "Madison Cramer",
@@ -184,6 +194,7 @@
       "👁",
       "💗",
       "👣"
-    ]
+    ],
+    "gender": "female"
   }
 }
