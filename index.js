@@ -122,6 +122,8 @@ removeUnusedFiles();
 
 const docs = require("@googleapis/docs");
 const mime = require("mime-types");
+const tools = ["text-to-image", "text-to-audio", "text-to-video"];
+const toolTokens = ["BEGIN_CALL_TOOL", "END_CALL_TOOL"];
 
 const client = docs.docs({
   version: "v1",
@@ -157,10 +159,11 @@ const updateDoc = async () => {
 // updateDoc();
 // setInterval(updateDoc, 1000 * 60 * 60 * 24);
 
-const getRules = (u, user) => {
+const getRules = (u, rn, allowed) => {
   const authorInfo = `
     ----------
     Name: %n
+    Id (in the chat app): %id
     Character: %c
     Character description: %cd
     Date of birth: %d
@@ -168,9 +171,17 @@ const getRules = (u, user) => {
     ----------
   `;
   return `
-    Your name is ${u.name}, a helpful assistant created by Joshua Keesee.
+    You are a helpful assistant named ${u.name}.
+    You were developed by Joshua Keesee.
     We are in a chat app called HGUT, short for "The Hobo's Guide to the Universe of Texas".
-    To mention someone, type an "@" followed by their capitalized real first and last name separated with a hyphen (e.g. @Joshua-Keesee).
+    The name of this chat room is "${rn}" (if it is 2 numbers separated by a hyphen then it's a personal chat).
+    The people accessible in this chat room include: ${allowed
+      .map(
+        (e) =>
+          profiles[Object.keys(profiles).find((p) => profiles[p].id == e)].name
+      )
+      .join(", ")}.
+    To mention someone, type an "@" followed by their capitalized real first and last name separated with a hyphen (e.g. "@Joshua-Keesee"), but don't mention them all the time.
     You can also mention someone by clicking the "@" icon, "Mention Someone", and then select a name.
     HGUT is a book which can be found at https://docs.google.com/document/d/1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I/edit#heading=h.usr1krprpaoe.
     The authors of HGUT are: ${Object.values(fp)
@@ -188,23 +199,84 @@ const getRules = (u, user) => {
       .map((e) =>
         authorInfo
           .replace("%n", e.name)
+          .replace("%id", e.id)
           .replace("%c", e.character)
           .replace("%cd", e.description)
           .replace("%d", e.dob)
           .replace("%g", e.gender)
       )
-      .join("\n")}
-    Also, never include your name and date in your response (e.g. Joshua Keesee (some date): ). It is only included for you.
+      .join("")}
+      PS stands for "Pre-Spawn" but is also known as "BC" or "BCE". IZ stands for "Includes-Zhenzhen" but is also known as "AD" or "CE". Only use these when listing dates.
+      Here are the months in the HGUT calendar: January, February, March, April, Octember (32 days long), June, July, August, September, Muy (30 days long), November, and December.
+      Here is the HGUT story timeline:
+      ----------
+      ∞ PS - God was/is/always will be never born
+      450 PS - General Sherman is born
+      4 PS - Jesus Christ is born
+      1 IZ - Zhenzhen materializes in a slob in Ireland
+      721 IZ - Sucram is born
+      738 IZ - Sucram is cursed with perpetual birth
+        - Always dies at 4:50 P.M. 
+          - Relates to the birth of General Sherman as all curses do
+          - Relates to the start of the Roman Calendar (738 PS)
+          - Relates to Zhenzhen cursing the calendar
+      1779 IZ - Tina and Napolean are born
+      1780 IZ - Tina's parents hate her face so they kick her out and she lives on the streets like a... HOBO!
+        - Relates to the title of the story
+      1942 IZ - Chad Magenta is born; gets hit by a stick in the head that has to do with Experiment 4.2 at age 1 on June 4th, 1943 whenever Teddy Roosevelt's child Kermit Roosevelt died causing physical harm to the aging gland causing him to stop aging after age 33 forever.
+      1987 IZ - Miss is born
+      1994 IZ - Clementine Favila is born / materializes
+      2010 IZ - Kycumber materializes in a Suncash Coffee Shop in the country of Texas, finding Liam buying a large Kopi Iuwak
+      2042 IZ - Kycumber is born
+      2057 IZ - General Sherman is killed
+      2058 IZ - Kycumber leaves the future and travels back to 2010 IZ in the Suncash Coffee Shop
+      ----------
+      You also have access to these tools: ${tools.join(", ")}.
+      Here are the parameters for each tool:
+      ----------
+      {
+        "name": "text-to-image",
+        "prompt": "prompt",
+        "width": [256-1536], // Default: 1024
+        "height": [256-1536], // Default: 1024
+        "NUM_IMAGES_PER_PROMPT": [1-4] // Default: 1
+      }
+      ----------
+      ----------
+      {
+        "name": "text-to-audio",
+        "prompt": "prompt",
+        "seconds_total": [0-47] // Default: 30
+      }
+      ----------
+      ----------
+      {
+        "name": "text-to-video",
+        "prompt": "prompt",
+        "base": ["Cartoon", "Realistic", "3d", "Anime"], // Default: "Realistic"
+        "motion": ["", "guoyww/animatediff-motion-lora-zoom-in", "guoyww/animatediff-motion-lora-zoom-out", "guoyww/animatediff-motion-lora-tilt-up", "guoyww/animatediff-motion-lora-tilt-down", "guoyww/animatediff-motion-lora-pan-left", "guoyww/animatediff-motion-lora-pan-right", "guoyww/animatediff-motion-lora-rolling-anticlockwise", "guoyww/animatediff-motion-lora-rolling-clockwise"] // Default: "guoyww/animatediff-motion-lora-zoom-in"
+      }
+      ----------
+      To use a tool, use this format:
+      ${toolTokens[0]}
+        {
+          "name": "tool name",
+          ... // other tool-specific parameters
+        }
+      ${toolTokens[1]}
+      You can use the requested tools anywhere in a message, but never change default parameters unless asked.
+      Before you call a tool (or tools), say something like, "Sure, I can generate an image of a cat for you."
+      After you call a tool (or tools), say something like, "Here is the image of a cat you requested."
   `;
 };
 
-const formatMessages = (messages, u, user) => {
+const formatMessages = (messages, u, user, rn, allowed) => {
   const fm = [];
   let currRole = user ? "assistant" : null;
   for (const m of messages) {
     const r = m.name == u.name ? "assistant" : "user";
-    const part = `${u.name} (${m.date}): ${m.message}`;
-    if (currRole == r) fm[fm.length - 1].content += "\n" + part;
+    const part = (r == "user" ? `${m.name} (${m.date}): ` : "") + m.message;
+    if (currRole == r) fm[fm.length - 1].content += `\n${part}`;
     else {
       currRole = r;
       fm.push({
@@ -216,7 +288,7 @@ const formatMessages = (messages, u, user) => {
   if (user)
     fm.unshift({
       role: "system",
-      content: getRules(u, user),
+      content: getRules(u, rn, allowed),
     });
   return fm;
 };
@@ -225,7 +297,7 @@ let localServer = "http://127.0.0.1:5000";
 const AlfredIndigo = async (prompt, us, messages = [], max_tokens = 1000) => {
   messages.push({
     role: "user",
-    content: `${us.name} (${new Date()}): ${prompt}`,
+    content: `${us.name} at ${new Date()}: ${prompt}`,
   });
   const data = await (
     await fetch(localServer + "/generate", {
@@ -243,15 +315,15 @@ const AlfredIndigo = async (prompt, us, messages = [], max_tokens = 1000) => {
   if (data["error"]) return { error: data["error"] };
   else return data["response"];
 };
-const generateContent = async (prompt, type = "image") => {
+const generateContent = async (d) => {
   const data = await (
-    await fetch(localServer + `/generate-${type}`, {
+    await fetch(`${localServer}/${d.name}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
       },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify(d),
     })
   ).json();
   if (data["error"]) return { error: data["error"] };
@@ -742,13 +814,16 @@ const sendAIMessage = async (
   if (reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
     let prompt =
       imgUrl || message.replace("@" + aiUser.name.replace(" ", "-"), "");
-    const messages = get("rooms")[r].messages;
+    const room = get("rooms")[r];
+    const messages = room.messages;
     const m = structuredClone(messages).splice(-1)[0];
     const id = m.id;
     let fm = formatMessages(
       reply ? m?.replies?.concat(...m.message) || [] : messages,
       aiUser,
-      aiUser.id == -1 ? us : ""
+      aiUser.id == -1 ? us : "",
+      room.name,
+      room.allowed
     );
 
     const setTyping = (t = true) => {
@@ -757,141 +832,18 @@ const sendAIMessage = async (
       io.of(curr).to(r).emit("typing", typing[r]);
     };
 
-    let l = prompt.toLowerCase();
-    const gts = [
-      "generate",
-      "make",
-      "create",
-      "form",
-      "produce",
-      "construct",
-      "build",
-      "imagine",
-      "fabricate",
-      "design",
-      "develop",
-      "compose",
-      "formulate",
-      "forge",
-      "conjure",
-      "originate",
-      "invent",
-      "concoct",
-      "spawn",
-      "hatch",
-      "dream up",
-      "cook up",
-      "whip up",
-      "come up with",
-      "devise",
-      "think up",
-    ];
-    const imgTerms = [
-      "image",
-      "picture",
-      "photo",
-      "visual",
-      "illustration",
-      "drawing",
-      "diagram",
-      "portrait",
-      "painting",
-      "sketch",
-      "imagine an ",
-      "imagine a ",
-    ];
-    const audioTerms = [
-      "audio",
-      "music",
-      "sfx",
-      "sound effect",
-      "sound",
-      "effect",
-      "song",
-    ];
-    const videoTerms = ["video", "gif", "animation", "cartoon"];
-    const isVideoPrompt =
-      (gts.some((e) => l.includes(e)) &&
-        videoTerms.some((e) => l.includes(e))) ||
-      videoTerms.some((e) => l.includes(e + " of"));
-    const isAudioPrompt =
-      (gts.some((e) => l.includes(e)) &&
-        audioTerms.some((e) => l.includes(e))) ||
-      audioTerms.some((e) => l.includes(e + " of"));
-    const isImgPrompt =
-      !isVideoPrompt &&
-      !isAudioPrompt &&
-      ((gts.some((e) => l.includes(e)) &&
-        imgTerms.some((e) => l.includes(e))) ||
-        imgTerms.some((e) => l.includes(e + " of")));
-
     setTyping();
-
-    if (isImgPrompt || isAudioPrompt || isVideoPrompt) {
-      const q = isImgPrompt
-        ? imgTerms
-        : isAudioPrompt
-        ? audioTerms
-        : isVideoPrompt
-        ? videoTerms
-        : [];
-      const t = isImgPrompt
-        ? "An image"
-        : isAudioPrompt
-        ? "Audio"
-        : isVideoPrompt
-        ? "A video"
-        : "";
-      [...(!isAudioPrompt ? q : []), ...gts].forEach(
-        (e) =>
-          (l = l
-            .split(e + " of")
-            .at(-1)
-            .split(e)
-            .at(-1))
-      );
-      l = l.trim().replace(/\s+/g, " ");
-      const gis = [
-        'No problem! I\'ll try to %gts% "%prompt%"',
-        'Sure, I\'ll see if I can %gts% "%prompt%"',
-        'I\'ll try to %gts% %type-l% for "%prompt%"',
-        'I\'ll see what I can %gts% for "%prompt%"',
-        '%type% of "%prompt%", coming right up!',
-      ];
-      aiUser.room = r;
-      sendMessage(
-        gis[Math.floor(Math.random() * gis.length)]
-          .replaceAll("%prompt%", l)
-          .replaceAll("%gts%", gts[Math.floor(Math.random() * gts.length)])
-          .replaceAll("%type-l%", t.toLowerCase())
-          .replaceAll("%type%", t),
-        aiUser,
-        curr
-      );
-      setTyping();
-      const res = await generateContent(
-        l,
-        isImgPrompt
-          ? "image"
-          : isAudioPrompt
-          ? "audio"
-          : isVideoPrompt
-          ? "video"
-          : ""
-      );
-      setTyping(false);
-      aiUser.room = r;
-      if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
-      sendMessage(res, aiUser, curr);
-      return;
-    }
-
-    setTyping();
-
     const res = await AlfredIndigo(prompt, us, fm);
-    setTyping(false);
     if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
-    if (reply) {
+
+    const getIndices = (str, find, end=false) => {
+      const id = [];
+      let i = -1;
+      while ((i = str.indexOf(find, i + 1)) >= 0) id.push(end ? i + find.length : i);
+      return id;
+    };
+
+    const sendReply = (res) => {
       const rooms = get("rooms");
       const messages = rooms[r].messages;
       const m = messages[id];
@@ -914,7 +866,57 @@ const sendAIMessage = async (
           prev: m.replies[i - 1],
           i,
         });
-    } else sendMessage(res, { room: r, ...aiUser }, curr);
+    };
+
+    const sendFn = (re) => {
+      if (!re) return;
+      if (reply) sendReply(re);
+      else sendMessage(re, { room: r, ...aiUser }, curr);
+    };
+
+    const nextIter = (i, st, et) => {
+      const t = res.slice(st[i], et[i]), r = res.split(t);
+      return r;
+    };
+
+    try {
+      const tc = [];
+      const st = getIndices(res, toolTokens[0]);
+      const et = getIndices(res, toolTokens[1], true);
+      for (let i = 0; i < st.length; i++) {
+        const s = st[i];
+        const e = et[i];
+        const tool = res.slice(s, e).replace(toolTokens[0], "").replace(toolTokens[1], "");
+        const t = JSON.parse(tool);
+        tc.push(t);
+      }
+
+      if (tc.length == 0) return sendFn(res);
+      let i = 0;
+      for (const t of tc) {
+        setTyping();
+        const re = nextIter(i, st, et)[0];
+        if (re && !re.includes(toolTokens[0])) sendFn(re);
+        if (!tools.includes(t.name)) continue;
+        setTyping();
+        const data = await generateContent(t);
+        if (data.error) {
+          io.of(curr).to(r).emit("ai error", data.error);
+          sendFn(`Sorry, an error occurred while using the ${t.name} tool.`);
+          return;
+        }
+        sendFn(data);
+        i++;
+      }
+      setTyping();
+      const e = nextIter(i, st, et);
+      const re = e[e.length - 1];
+      if (re && !re.includes(toolTokens[0])) sendFn(re);
+    } catch (e) {
+      console.log(e);
+      console.log(res);
+    }
+    setTyping(false);
   }
 };
 

@@ -1,11 +1,7 @@
 import os
 import shutil
 import time
-import os
-import shutil
-import time
 import logging
-import click
 import warnings
 import sys
 from flask import Flask, request, jsonify
@@ -16,15 +12,6 @@ logging.disable(sys.maxsize)
 warnings.filterwarnings("ignore")
 logger = logging.getLogger("werkzeug")
 logger.setLevel(logging.ERROR)
-
-def secho(text, file=None, nl=None, err=None, color=None, **styles):
-    pass
-
-def echo(text, file=None, nl=None, err=None, color=None, **styles):
-    pass
-
-click.echo = echo
-click.secho = secho
 
 mp = "assets/Alfred-Indigo"
 c = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct", token=os.getenv("HF_TOKEN"))
@@ -46,12 +33,12 @@ def generate_api():
         return jsonify({"response":r.choices[0].message.content})
     except Exception as e:return jsonify({"error":str(e)})
 
-@app.route("/generate-image", methods=["POST"])
+@app.route("/text-to-image", methods=["POST"])
 def generate_image_api():
     try:
-        m=request.json["prompt"]
+        del request.json["name"]
         r=i.predict(
-            prompt=m,
+            **request.json,
             api_name="/run"
         )[0]["image"]
         fp=f"files/{round(time.time()*1000)}.{r.split('.')[-1]}"
@@ -59,14 +46,12 @@ def generate_image_api():
         return jsonify({"response":f"/{fp}"})
     except Exception as e:return jsonify({"error":str(e)})
 
-@app.route("/generate-audio", methods=["POST"])
+@app.route("/text-to-audio", methods=["POST"])
 def generate_audio_api():
     try:
-        m=request.json["prompt"]
+        del request.json["name"]
         r=a.predict(
-            prompt=m,
-            seconds_total=47,
-		    steps=150,
+            **request.json,
             api_name="/predict"
         )
         fp=f"files/{round(time.time()*1000)}.{r.split('.')[-1]}"
@@ -74,13 +59,12 @@ def generate_audio_api():
         return jsonify({"response":f"/{fp}"})
     except Exception as e:return jsonify({"error":str(e)})
 
-@app.route("/generate-video", methods=["POST"])
+@app.route("/text-to-video", methods=["POST"])
 def generate_video_api():
     try:
-        m=request.json["prompt"]
+        del request.json["name"]
         r=v.predict(
-            prompt=m,
-            motion="",
+            **request.json,
             api_name="/generate_image"
         )["video"]
         fp=f"files/{round(time.time()*1000)}.{r.split('.')[-1]}"

@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "python alfred-indigo.py & node index.js",
+    "start": "node index.js",
+    "ai": "python alfred-indigo.py",
     "build": "npm install && pip install torch --index-url=https://download.pytorch.org/whl/cpu && pip install click flask transformers gradio_client"
   },
   "author": "JoshKeesee",
