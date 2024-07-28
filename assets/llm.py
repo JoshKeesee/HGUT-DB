@@ -1,23 +1,8 @@
 import torch
 import torch.nn as nn
-from huggingface_hub import PyTorchModelHubMixin
 
 
-class LLM(
-        nn.Module,
-        PyTorchModelHubMixin,
-        tags=[
-            "pytorch_model_hub_mixin",
-            "model_hub_mixin",
-        ],
-        license="apache-2.0",
-        languages=[
-            "en",
-        ],
-        pipeline_tag="text-generation",
-        library_name="transformers",
-        repo_url="https://github.com/JoshKeesee/Alfred-Indigo",
-    ):
+class LLM(nn.Module):
     def __init__(self, vocab_size, embed_size, hidden_size, num_layers):
         super(LLM, self).__init__()
 
@@ -39,3 +24,15 @@ class LLM(
         x, _ = self.gru(x)
         x = self.fc(x)
         return x
+    
+    def save(self, model_path):
+        # Save model state dict
+        torch.save(self.state_dict(), model_path)
+
+    @classmethod
+    def load(cls, model_path, vocab_size, embed_size=128, hidden_size=128, num_layers=2, **kwargs):
+        # Load model
+        model = cls(vocab_size, embed_size, hidden_size, num_layers)
+        model.load_state_dict(torch.load(f"{model_path}"))
+        model.eval()  # Set model to evaluation mode
+        return model

@@ -1,6 +1,11 @@
 {
-  "embed_size": 256,
-  "hidden_size": 512,
-  "num_layers": 2,
-  "vocab_size": 1978
+    "hidden_size": 128,
+    "num_layers": 4,
+    "embed_size": 128,
+    "model_type": "Alfred-Indigo",
+    "vocab_size": 2020,
+    "bos_token": 0,
+    "eos_token": 1,
+    "unk_token": 2,
+    "pad_token": 3
 }

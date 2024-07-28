@@ -131,8 +131,6 @@ const client = docs.docs({
   }),
 });
 
-const alfredGreeting =
-  "Hey there, %name%! I'm Alfred Indigo, still in development. Ask me anything!";
 const documentId = "1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I";
 let docText = "";
 
@@ -218,30 +216,6 @@ const formatMessages = (messages, u, user) => {
   return fm;
 };
 
-const generateImage = async (prompt) => {
-  const modelId = "sd-community/sdxl-flash";
-  const raw = JSON.stringify({ inputs: prompt });
-  const reqOpts = {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.HF_TOKEN}`,
-    },
-    body: raw,
-  };
-  const res = await fetch(
-    `https://api-inference.huggingface.co/models/${modelId}`,
-    reqOpts
-  );
-  const data = await res.blob();
-  const buffer = await data.arrayBuffer();
-  if (buffer.byteLength > 0 && data.type.includes("image")) {
-    const file = Buffer.from(buffer).toString("base64");
-    const name = upload("data:" + data.type + ";base64," + file);
-    return name;
-  }
-  return { error: "No image generated" };
-};
-
 let localServer = "http://127.0.0.1:5000";
 const AlfredIndigo = async (prompt, messages = [], max_tokens = 1000) => {
   messages.push({
@@ -259,6 +233,20 @@ const AlfredIndigo = async (prompt, messages = [], max_tokens = 1000) => {
         messages,
         max_tokens,
       }),
+    })
+  ).json();
+  if (data["error"]) return { error: data["error"] };
+  else return data["response"];
+};
+const generateContent = async (prompt, type = "image") => {
+  const data = await (
+    await fetch(localServer + `/generate-${type}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ prompt }),
     })
   ).json();
   if (data["error"]) return { error: data["error"] };
@@ -316,25 +304,6 @@ app.post("/user-data", (req, res) => {
     profiles: fp,
     rooms: cr,
   });
-});
-app.post("/predict-text", async (req, res) => {
-  const u = checkUser(req.body.user);
-  if (!u) return res.status(201).json({ error: true });
-  try {
-    const data = await (
-      await fetch(localServer + "/predict-text", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(req.body),
-      })
-    ).json();
-    res.status(201).json(data);
-  } catch (e) {
-    res.status(201).json({ error: true });
-  }
 });
 app.post("/login", async (req, res) => {
   const username = req.body["name"];
@@ -556,23 +525,6 @@ io.of("chat").on("connection", (socket) => {
       set({ rooms });
       io.of(curr).to(socket.user.room).emit("clear", socket.user);
       removeUnusedFiles();
-      const aiUser =
-        profiles[Object.keys(profiles).find((k) => profiles[k].id == bot)];
-      aiUser.room = socket.user.room;
-      if (!typing[socket.user.room].includes(aiUser.id))
-        typing[socket.user.room].push(aiUser.id);
-      io.of(curr).to(socket.user.room).emit("typing", typing[socket.user.room]);
-      const greeting =
-        bot == "-1"
-          ? alfredGreeting.replace("%name%", socket.user.name.split(" ")[0])
-          : "";
-      if (typeof greeting == "string") sendMessage(greeting, aiUser, curr);
-      else
-        sendMessage(
-          "Hello, " + socket.user.name + "! How can I assist you?",
-          aiUser,
-          curr
-        );
       return;
     }
     const { isImage, message: m } = sendMessage(message, socket.user, curr);
@@ -700,7 +652,6 @@ io.of("chat").on("connection", (socket) => {
 
   socket.on("join room", async (room, mm = initMessages) => {
     const rooms = get("rooms");
-    let newRoom = false;
     if (!rooms[room]) {
       const u = room
         .replace("-", ",")
@@ -751,16 +702,6 @@ io.of("chat").on("connection", (socket) => {
       room,
       socket.user.unread,
     ]);
-
-    let aiUser =
-      profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
-    aiUser.room = socket.user.room;
-    if (rooms[room].allowed.includes(aiUser.id) && newRoom)
-      sendMessage(
-        alfredGreeting.replace("%name%", socket.user.name.split(" ")[0]),
-        aiUser,
-        curr
-      );
   });
 
   socket.on("note start", (note) => {
@@ -857,17 +798,52 @@ const sendAIMessage = async (
       "portrait",
       "painting",
       "sketch",
-      "imagine an",
-      "imagine a",
+      "imagine an ",
+      "imagine a ",
     ];
+    const audioTerms = [
+      "audio",
+      "music",
+      "sfx",
+      "sound effect",
+      "sound",
+      "effect",
+      "song",
+    ];
+    const videoTerms = ["video", "gif", "animation", "cartoon"];
+    const isVideoPrompt =
+      (gts.some((e) => l.includes(e)) &&
+        videoTerms.some((e) => l.includes(e))) ||
+      videoTerms.some((e) => l.includes(e + " of"));
+    const isAudioPrompt =
+      (gts.some((e) => l.includes(e)) &&
+        audioTerms.some((e) => l.includes(e))) ||
+      audioTerms.some((e) => l.includes(e + " of"));
     const isImgPrompt =
-      (gts.some((e) => l.includes(e)) && imgTerms.some((e) => l.includes(e))) ||
-      imgTerms.some((e) => l.includes(e + " of"));
+      !isVideoPrompt &&
+      !isAudioPrompt &&
+      ((gts.some((e) => l.includes(e)) &&
+        imgTerms.some((e) => l.includes(e))) ||
+        imgTerms.some((e) => l.includes(e + " of")));
 
     setTyping();
 
-    if (isImgPrompt) {
-      [...imgTerms, ...gts].forEach(
+    if (isImgPrompt || isAudioPrompt || isVideoPrompt) {
+      const q = isImgPrompt
+        ? imgTerms
+        : isAudioPrompt
+        ? audioTerms
+        : isVideoPrompt
+        ? videoTerms
+        : [];
+      const t = isImgPrompt
+        ? "An image"
+        : isAudioPrompt
+        ? "Audio"
+        : isVideoPrompt
+        ? "A video"
+        : "";
+      [...(!isAudioPrompt ? q : []), ...gts].forEach(
         (e) =>
           (l = l
             .split(e + " of")
@@ -879,20 +855,31 @@ const sendAIMessage = async (
       const gis = [
         'No problem! I\'ll try to %gts% "%prompt%"',
         'Sure, I\'ll see if I can %gts% "%prompt%"',
-        'I\'ll try to %gts% an image for "%prompt%"',
+        'I\'ll try to %gts% %type-l% for "%prompt%"',
         'I\'ll see what I can %gts% for "%prompt%"',
-        'A photo of "%prompt%", coming right up!',
+        '%type% of "%prompt%", coming right up!',
       ];
       aiUser.room = r;
       sendMessage(
         gis[Math.floor(Math.random() * gis.length)]
           .replaceAll("%prompt%", l)
-          .replaceAll("%gts%", gts[Math.floor(Math.random() * gts.length)]),
+          .replaceAll("%gts%", gts[Math.floor(Math.random() * gts.length)])
+          .replaceAll("%type-l%", t.toLowerCase())
+          .replaceAll("%type%", t),
         aiUser,
         curr
       );
       setTyping();
-      const res = await generateImage(l);
+      const res = await generateContent(
+        l,
+        isImgPrompt
+          ? "image"
+          : isAudioPrompt
+          ? "audio"
+          : isVideoPrompt
+          ? "video"
+          : ""
+      );
       setTyping(false);
       aiUser.room = r;
       if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
