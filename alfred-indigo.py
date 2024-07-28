@@ -1,15 +1,16 @@
 import os
 import shutil
 import time
+import os
+import shutil
+import time
 import logging
 import click
 import warnings
 import sys
 from flask import Flask, request, jsonify
-from transformers import pipeline
 from gradio_client import Client
 from huggingface_hub import InferenceClient
-from assets.model import Model
 
 logging.disable(sys.maxsize)
 warnings.filterwarnings("ignore")
