@@ -158,16 +158,19 @@ const updateDoc = async () => {
 // setInterval(updateDoc, 1000 * 60 * 60 * 24);
 
 const getRules = (u, user) => {
+  const authorInfo = `
+    ----------
+    Name: %n
+    Character: %c
+    Character description: %cd
+    Date of birth: %d
+    Gender: %g
+    ----------
+  `;
   return `
-    My name is ${u.name}.
-    My first name is ${u.name.split(" ")[0]}.
-    The user's name is ${user.name}.
-    The user's first name is ${user.name.split(" ")[0]}.
-    The user's character is ${user.character}.
-    The user's character description is ${user.description}.
-    The user's date of birth is ${user.dob}.
+    Your name is ${u.name}, a helpful assistant created by Joshua Keesee.
     We are in a chat app called HGUT, short for "The Hobo's Guide to the Universe of Texas".
-    To mention someone, type an "@" followed by their capitalized first and last name separated with a hyphen.
+    To mention someone, type an "@" followed by their capitalized real first and last name separated with a hyphen (e.g. @Joshua-Keesee).
     You can also mention someone by clicking the "@" icon, "Mention Someone", and then select a name.
     HGUT is a book which can be found at https://docs.google.com/document/d/1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I/edit#heading=h.usr1krprpaoe.
     The authors of HGUT are: ${Object.values(fp)
@@ -180,31 +183,28 @@ const getRules = (u, user) => {
       .filter((k) => k.id >= 0 && !k.notInBook)
       .map((k) => k.name + "'s character is " + k.character)
       .join(", ")}.
-    These are the character descriptions in the story (HGUT): ${Object.values(
-      fp
-    )
-      .filter((k) => k.id >= 0 && !k.notInBook)
-      .map((k) => k.character + "'s description: '" + k.description + "'")
-      .join(", ")}.
+    Here is each character's profile info:
+    ${Object.values(fp)
+      .map((e) =>
+        authorInfo
+          .replace("%n", e.name)
+          .replace("%c", e.character)
+          .replace("%cd", e.description)
+          .replace("%d", e.dob)
+          .replace("%g", e.gender)
+      )
+      .join("\n")}
+    Also, never include your name and date in your response (e.g. Joshua Keesee (some date): ). It is only included for you.
   `;
 };
 
 const formatMessages = (messages, u, user) => {
   const fm = [];
-  if (user)
-    fm.push(
-      { role: "user", content: "" },
-      {
-        role: "assistant",
-        content: getRules(u, user),
-      }
-    );
   let currRole = user ? "assistant" : null;
   for (const m of messages) {
     const r = m.name == u.name ? "assistant" : "user";
-    const part =
-      (r == "user" ? m.name + " (" + m.date + "): " : "") + m.message;
-    if (currRole == r) fm[fm.length - 1].content = part;
+    const part = `${u.name} (${m.date}): ${m.message}`;
+    if (currRole == r) fm[fm.length - 1].content += "\n" + part;
     else {
       currRole = r;
       fm.push({
@@ -213,14 +213,19 @@ const formatMessages = (messages, u, user) => {
       });
     }
   }
+  if (user)
+    fm.unshift({
+      role: "system",
+      content: getRules(u, user),
+    });
   return fm;
 };
 
 let localServer = "http://127.0.0.1:5000";
-const AlfredIndigo = async (prompt, messages = [], max_tokens = 1000) => {
+const AlfredIndigo = async (prompt, us, messages = [], max_tokens = 1000) => {
   messages.push({
     role: "user",
-    content: prompt,
+    content: `${us.name} (${new Date()}): ${prompt}`,
   });
   const data = await (
     await fetch(localServer + "/generate", {
@@ -745,12 +750,6 @@ const sendAIMessage = async (
       aiUser,
       aiUser.id == -1 ? us : ""
     );
-    if (fm[fm.length - 1]?.role == "user") fm.pop();
-    if (fm[0]?.role == "assistant") {
-      if (m.name != aiUser.name)
-        fm.unshift({ role: "user", content: m.name + ": " + m.message });
-      else fm.unshift({ role: "user", content: m.name + ": " });
-    }
 
     const setTyping = (t = true) => {
       if (!t) typing[r].splice(typing[r].indexOf(id2), 1);
@@ -889,7 +888,7 @@ const sendAIMessage = async (
 
     setTyping();
 
-    const res = await AlfredIndigo(prompt, fm);
+    const res = await AlfredIndigo(prompt, us, fm);
     setTyping(false);
     if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
     if (reply) {
