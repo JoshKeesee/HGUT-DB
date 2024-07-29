@@ -10,7 +10,6 @@ module.exports = (username) => {
     theme: false,
     accent: true,
     emoji: true,
-    notifications: {},
     notificationSound: "Chat",
     dontDisturb: false,
     predictText: true,

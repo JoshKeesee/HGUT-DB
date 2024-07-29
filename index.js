@@ -14,16 +14,10 @@ const fs = require("fs");
 const dotenv = require("dotenv");
 dotenv.config();
 const bcrypt = require("bcrypt");
-const webpush = require("web-push");
 const pushKeys = {
   public: process.env.PUBLIC_KEY,
   private: process.env.PRIVATE_KEY,
 };
-webpush.setVapidDetails(
-  "mailto:joshuakeesee1@gmail.com",
-  pushKeys.public,
-  pushKeys.private
-);
 const profiles = require("./profiles.json");
 const accessCode = bcrypt.hashSync(process.env.ACCESS_CODE, 10);
 Object.keys(profiles).forEach((p) => {
@@ -122,7 +116,7 @@ removeUnusedFiles();
 
 const docs = require("@googleapis/docs");
 const mime = require("mime-types");
-const tools = ["text-to-image", "text-to-audio", "text-to-video"];
+const tools = ["text-to-image", "text-to-audio", "text-to-video", "chapter-context"];
 const toolTokens = ["BEGIN_CALL_TOOL", "END_CALL_TOOL"];
 
 const client = docs.docs({
@@ -135,6 +129,7 @@ const client = docs.docs({
 
 const documentId = "1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I";
 let docText = "";
+let docTC = "";
 
 const getDocument = async () => {
   const res = await client.documents.get({
@@ -146,28 +141,44 @@ const getDocument = async () => {
 const getDocumentText = async (data) => {
   const text = data.body.content
     .map((e) => e.paragraph?.elements.map((e) => e.textRun?.content).join(""))
-    .join("");
+    .join("").replaceAll("…", "...");
   return text;
+};
+
+const getDocumentTC = async (data) => {
+  const tc = data.body.content.filter((e) => e.tableOfContents)[0]
+    .tableOfContents.content;
+  let txt = tc
+    ?.map((e) => e.paragraph?.elements.map((e) => e.textRun?.content).join(""))
+    .join("").replaceAll("…", "...");
+  const re = /\d+/g;
+  const matches = txt.match(re);
+  if (matches) matches.forEach((m) => (txt = txt.replace(m, "")));
+  txt = txt.split("\n").map(e => e.trim()).join("\n");
+  return txt;
 };
 
 const updateDoc = async () => {
   const data = await getDocument();
   docText = await getDocumentText(data);
+  docTC = await getDocumentTC(data);
   console.log("Document updated: " + new Date().toLocaleString());
 };
 
-// updateDoc();
-// setInterval(updateDoc, 1000 * 60 * 60 * 24);
+updateDoc();
+setInterval(updateDoc, 1000 * 60 * 60 * 24);
 
 const getRules = (u, rn, allowed) => {
+  if (allowed == "all") allowed = Object.keys(profiles).map((k) => profiles[k].id);
   const authorInfo = `
-    ----------
     Name: %n
     Id (in the chat app): %id
+    Color theme (in the chat app): %ct
     Character: %c
     Character description: %cd
     Date of birth: %d
     Gender: %g
+    Is a character in the book: %ib
     ----------
   `;
   return `
@@ -195,15 +206,18 @@ const getRules = (u, rn, allowed) => {
       .map((k) => k.name + "'s character is " + k.character)
       .join(", ")}.
     Here is each character's profile info:
+    ----------
     ${Object.values(fp)
       .map((e) =>
         authorInfo
           .replace("%n", e.name)
           .replace("%id", e.id)
+          .replace("%ct", e.color)
           .replace("%c", e.character)
           .replace("%cd", e.description)
           .replace("%d", e.dob)
           .replace("%g", e.gender)
+          .replace("%ib", !e.notInBook)
       )
       .join("")}
       PS stands for "Pre-Spawn" but is also known as "BC" or "BCE". IZ stands for "Includes-Zhenzhen" but is also known as "AD" or "CE". Only use these when listing dates.
@@ -231,7 +245,8 @@ const getRules = (u, rn, allowed) => {
       2057 IZ - General Sherman is killed
       2058 IZ - Kycumber leaves the future and travels back to 2010 IZ in the Suncash Coffee Shop
       ----------
-      You also have access to these tools: ${tools.join(", ")}.
+      Here are the chapter titles in order: ${docTC.split("\n").join(", ")}
+      You (personally) also have access to these tools: ${tools.join(", ")}.
       Here are the parameters for each tool:
       ----------
       {
@@ -242,13 +257,11 @@ const getRules = (u, rn, allowed) => {
         "NUM_IMAGES_PER_PROMPT": [1-4] // Default: 1
       }
       ----------
-      ----------
       {
         "name": "text-to-audio",
         "prompt": "prompt",
         "seconds_total": [0-47] // Default: 30
       }
-      ----------
       ----------
       {
         "name": "text-to-video",
@@ -257,6 +270,12 @@ const getRules = (u, rn, allowed) => {
         "motion": ["", "guoyww/animatediff-motion-lora-zoom-in", "guoyww/animatediff-motion-lora-zoom-out", "guoyww/animatediff-motion-lora-tilt-up", "guoyww/animatediff-motion-lora-tilt-down", "guoyww/animatediff-motion-lora-pan-left", "guoyww/animatediff-motion-lora-pan-right", "guoyww/animatediff-motion-lora-rolling-anticlockwise", "guoyww/animatediff-motion-lora-rolling-clockwise"] // Default: "guoyww/animatediff-motion-lora-zoom-in"
       }
       ----------
+      {
+        "name": "chapter-context",
+        "chapter": "chapter title"
+      }
+      ----------
+      The "chapter-context" tool should only be used when a question about the book is asked. If this happens, only reply with that tool (nothing else).
       To use a tool, use this format:
       ${toolTokens[0]}
         {
@@ -265,7 +284,7 @@ const getRules = (u, rn, allowed) => {
         }
       ${toolTokens[1]}
       You can use the requested tools anywhere in a message, but never change default parameters unless asked.
-      Before you call a tool (or tools), say something like, "Sure, I can generate an image of a cat for you."
+      Before you call a tool (or tools), say something like, "Sure, I'll use the text-to-image tool to generate an image of a cat for you."
       After you call a tool (or tools), say something like, "Here is the image of a cat you requested."
   `;
 };
@@ -275,8 +294,9 @@ const formatMessages = (messages, u, user, rn, allowed) => {
   let currRole = user ? "assistant" : null;
   for (const m of messages) {
     const r = m.name == u.name ? "assistant" : "user";
-    const part = (r == "user" ? `${m.name} (${m.date}): ` : "") + m.message;
-    if (currRole == r) fm[fm.length - 1].content += `\n${part}`;
+    const part =
+      (r == "user" ? `${m.name} (${new Date(m.date)}): ` : "") + m.message;
+    if (currRole == r && fm.length) fm[fm.length - 1].content += `\n${part}`;
     else {
       currRole = r;
       fm.push({
@@ -336,16 +356,6 @@ app.use(cors());
 app.use("/profiles", express.static(__dirname + "/profiles"));
 app.use("/files", express.static(__dirname + "/files"));
 app.use("/sounds", express.static(__dirname + "/sounds"));
-app.post("/subscribe", (req, res) => {
-  const user = fp[req.body.user];
-  if (!user) return res.status(201).json({});
-  const subscriptions = get("subscriptions") || {};
-  const s = req.body.subscription;
-  if (!subscriptions[user.id]) subscriptions[user.id] = {};
-  subscriptions[user.id][req.body.deviceId] = s;
-  set({ subscriptions });
-  res.status(201).json({});
-});
 app.post("/message", (req, res) => {
   if (!req.body.user) return res.status(201).json({});
   const r = req.body;
@@ -806,7 +816,8 @@ const sendAIMessage = async (
   aiUser,
   reply,
   curr,
-  imgUrl = false
+  imgUrl = false,
+  useTools = true
 ) => {
   aiUser = structuredClone(aiUser);
   const { room: r, id: id1 } = us;
@@ -834,12 +845,14 @@ const sendAIMessage = async (
 
     setTyping();
     const res = await AlfredIndigo(prompt, us, fm);
+    setTyping(false);
     if (res.error) return io.of(curr).to(r).emit("ai error", res.error);
 
-    const getIndices = (str, find, end=false) => {
+    const getIndices = (str, find, end = false) => {
       const id = [];
       let i = -1;
-      while ((i = str.indexOf(find, i + 1)) >= 0) id.push(end ? i + find.length : i);
+      while ((i = str.indexOf(find, i + 1)) >= 0)
+        id.push(end ? i + find.length : i);
       return id;
     };
 
@@ -875,7 +888,8 @@ const sendAIMessage = async (
     };
 
     const nextIter = (i, st, et) => {
-      const t = res.slice(st[i], et[i]), r = res.split(t);
+      const t = res.slice(st[i], et[i]),
+        r = res.split(t);
       return r;
     };
 
@@ -886,18 +900,49 @@ const sendAIMessage = async (
       for (let i = 0; i < st.length; i++) {
         const s = st[i];
         const e = et[i];
-        const tool = res.slice(s, e).replace(toolTokens[0], "").replace(toolTokens[1], "");
-        const t = JSON.parse(tool);
-        tc.push(t);
+        const tool = res
+          .slice(s, e)
+          .replace(toolTokens[0], "")
+          .replace(toolTokens[1], "");
+        try {
+          const t = JSON.parse(tool);
+          tc.push(t);
+        } catch {}
       }
 
       if (tc.length == 0) return sendFn(res);
+      if (!useTools) {
+        let r = res;
+        for (const t of tc) {
+          r = r.replace(toolTokens[0] + JSON.stringify(t) + toolTokens[1], "");
+        }
+        sendFn(r);
+        return;
+      }
       let i = 0;
       for (const t of tc) {
         setTyping();
         const re = nextIter(i, st, et)[0];
         if (re && !re.includes(toolTokens[0])) sendFn(re);
         if (!tools.includes(t.name)) continue;
+        if (t.name == "chapter-context") {
+          const c = docTC.split("\n").find((e) => e.toLowerCase().includes(t.chapter.toLowerCase()));
+          const i = docTC.split("\n").indexOf(c);
+          if (!c) continue;
+          const d = docText.split(c)[1]?.split(docTC.split("\n")[i + 1])[0];
+          if (!d) continue;
+          sendAIMessage(`
+            With the chapter "${c}" in mind, here is the content:
+            ----------
+            ${d}
+            ----------
+            Reply to this message (without using any tools):
+            ----------
+            ${prompt}
+            ----------
+          `, us, aiUser, false, curr, false, false);
+          return;
+        }
         setTyping();
         const data = await generateContent(t);
         if (data.error) {
@@ -940,7 +985,6 @@ const sendMessage = (message, us, curr, p = false) => {
     });
     set({ rooms });
     const users = get("users") || {};
-    const subscriptions = get("subscriptions") || {};
     const a =
       rooms[us.room].allowed == "all"
         ? Object.keys(users)
@@ -948,29 +992,6 @@ const sendMessage = (message, us, curr, p = false) => {
     a.forEach((a) => {
       const u = users[a];
       if (!u) return;
-      if (subscriptions[u.id] && !o[u.id]?.visible) {
-        const n = rooms[us.room].name;
-        const payload = JSON.stringify({
-          title: `${us.name}${!rooms[n] ? " in " + n : ""}`,
-          body: `${!isImage ? message : " sent an image"}`,
-          image: isImage ? message : false,
-          icon: fp[us.name].profile,
-          tag: us.room,
-          actions: [
-            {
-              title: "Reply",
-              action: "reply",
-              type: "text",
-            },
-          ],
-        });
-        Object.keys(subscriptions[u.id]).forEach((k) => {
-          const e = subscriptions[u.id][k];
-          if (!e) return;
-          if (u.settings?.notifications[k])
-            webpush.sendNotification(e, payload).catch((e) => {});
-        });
-      }
       if (!o[u.id] || u.id == us.id || u.room == us.room) return;
       if (!u.unread.includes(us.room)) u.unread.push(us.room);
       io.of(curr).to(u.sid).emit("unread", u.unread);

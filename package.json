@@ -4,9 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "ai": "python alfred-indigo.py",
-    "build": "npm install && pip install torch --index-url=https://download.pytorch.org/whl/cpu && pip install click flask transformers gradio_client"
+    "start": "python alfred-indigo.py & node index.js",
+    "build": "npm install && pip install torch --index-url=https://download.pytorch.org/whl/cpu && pip install click flask huggingface_hub gradio_client"
   },
   "author": "JoshKeesee",
   "license": "ISC",
