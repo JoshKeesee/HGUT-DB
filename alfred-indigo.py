@@ -66,13 +66,14 @@ async def t(data):
                 r = s.get(
                     url="https://www.google.com/search",
                     headers=headers,
-                    params={"q": data["query"], "num": 4, "udm": 14},
+                    params={"q": data["query"], "num": data["num_results"], "udm": 14},
                     timeout=timeout,
                     verify=False
                 )
                 r.raise_for_status()
                 b = BeautifulSoup(r.text, "html.parser")
                 items = b.find_all("div", attrs={"class": "g"})
+                f = ""
                 for item in items:
                     link = item.find("a", href=True)["href"]
                     yield {"status": f"Searching web page ({items.index(item) + 1}/{len(items)})..."}
@@ -89,21 +90,17 @@ async def t(data):
                         for tag in b(["script", "style", "header", "footer", "nav", "form", "svg", "noscript"]):
                             tag.extract()
                         t = b.get_text(strip=True)
-                        max_chars = 500
+                        max_chars = 6000
                         if len(t) > max_chars:
                             t = t[:max_chars]
                         results.append({
                             "link": link,
                             "text": t
                         })
-                    except Exception as e:
-                        results.append({
-                            "link": link,
-                            "text": None
-                        })
-            f = ""
-            for result in results:
-                f += f"Link: {result['link']}\nText: {result['text']}\n"
+                        f += f"Link: {result['link']}\nText: {result['text']}\n"
+                        if len(f) > 6000:
+                            break
+                    except Exception as e: continue
             f = str(f).strip()
             yield {"response": f, "status": f"{name.capitalize()} tool completed"}
     except Exception as e:

@@ -117,7 +117,7 @@ removeUnusedFiles();
 const docs = require("@googleapis/docs");
 const mime = require("mime-types");
 const tools = ["text-to-image", "text-to-audio", "text-to-video", "web-search"];
-const toolTokens = ["BEGIN_CALL_TOOL", "END_CALL_TOOL"];
+const toolTokens = ["BEGIN_CALL", "END_CALL"];
 
 const client = docs.docs({
   version: "v1",
@@ -165,7 +165,7 @@ const getDocumentTC = async (data) => {
 
 const updateDoc = async () => {
   const data = await getDocument();
-  docText = await getDocumentText(data);
+  // docText = await getDocumentText(data);
   docTC = await getDocumentTC(data);
   console.log("Document updated: " + new Date().toLocaleString());
 };
@@ -188,7 +188,7 @@ const getRules = (u, rn, allowed) => {
     ----------
   `;
   return `
-    You are a helpful assistant named ${u.name}.
+    You are a fun, helpful, and engaging assistant named ${u.name}.
     You were developed by Joshua Keesee.
     We are in a chat app called HGUT, short for "The Hobo's Guide to the Universe of Texas".
     The name of this chat room is "${rn}" (if it is 2 numbers separated by a hyphen then it's a personal chat).
@@ -198,7 +198,7 @@ const getRules = (u, rn, allowed) => {
           profiles[Object.keys(profiles).find((p) => profiles[p].id == e)].name
       )
       .join(", ")}.
-    To mention someone, type an "@" followed by their capitalized real first and last name separated with a hyphen (e.g. "@Joshua-Keesee"), but don't mention them all the time.
+    To mention someone, you can type an "@" followed by their capitalized real first and last name separated with a hyphen (e.g. "@Joshua-Keesee"), but do not mention them all the time.
     You can also mention someone by clicking the "@" icon, "Mention Someone", and then select a name.
     HGUT is a book which can be found at https://docs.google.com/document/d/1xsxMONOYieKK_a87PTJwvmgwRZVNxOE4OhxtWc2oz7I/edit#heading=h.usr1krprpaoe.
     The authors of HGUT are: ${Object.values(fp)
@@ -281,7 +281,8 @@ const getRules = (u, rn, allowed) => {
       ----------
       {
         "name": "web-search",
-        "query": "query"
+        "query": "query",
+        "num_results": [1-10], // Default: 4
       }
       ----------
       To use a tool, you and only you can use this format in your response:
@@ -297,6 +298,7 @@ const getRules = (u, rn, allowed) => {
       Before you call a tool (or tools), say something like, "Sure, I'll use the text-to-image tool to generate an image of a cat for you."
       After you call a tool (or tools), say something like, "Here is the image of a cat you requested."
       You have access to real-time information using the "web-search" tool. If you don't know something, use this tool.
+      Ensure that you exactly follow the tool-calling format with "${toolTokens[0]}" at the start and "${toolTokens[1]}" at the end otherwise the tool will not work.
   `;
 };
 
@@ -649,12 +651,12 @@ io.of("chat").on("connection", (socket) => {
       removeUnusedFiles();
       return;
     }
-    const { isImage, message: m } = sendMessage(message, socket.user, curr);
+    const { isFile, message: m } = sendMessage(message, socket.user, curr);
     let aiUser =
       profiles[Object.keys(profiles).find((k) => profiles[k].id == -1)];
     aiUser.room = socket.user.room;
     let reply = message.includes("@" + aiUser.name.replace(" ", "-"));
-    sendAIMessage(message, socket.user, aiUser, reply, curr, isImage && m);
+    sendAIMessage(message, socket.user, aiUser, reply, curr, isFile && m);
   };
 
   socket.on("chat message", msg);
@@ -851,15 +853,14 @@ const sendAIMessage = async (
   aiUser,
   reply,
   curr,
-  imgUrl = false,
-  useTools = true
+  isFile = false,
+  useWebTool = true
 ) => {
   aiUser = structuredClone(aiUser);
   const { room: r, id: id1 } = us;
   const { id: id2 } = aiUser;
   if (reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
-    let prompt =
-      imgUrl || message.replace("@" + aiUser.name.replace(" ", "-"), "");
+    let prompt = isFile || message.replace("@" + aiUser.name.replace(" ", "-"), "");
     const room = get("rooms")[r];
     const messages = room.messages;
     const m = structuredClone(messages).splice(-1)[0];
@@ -946,14 +947,6 @@ const sendAIMessage = async (
       }
 
       if (tc.length == 0) return sendFn(res);
-      if (!useTools) {
-        let r = res;
-        for (const t of tc) {
-          r = r.replace(toolTokens[0] + JSON.stringify(t) + toolTokens[1], "");
-        }
-        sendFn(r);
-        return;
-      }
       let i = 0;
       for (const t of tc) {
         setTyping();
@@ -961,6 +954,7 @@ const sendAIMessage = async (
         if (re && !re.includes(toolTokens[0])) sendFn(re);
         if (!tools.includes(t.name)) continue;
         const ws = t.name == "web-search";
+        if (ws && !useWebTool) continue;
         const id = crypto.randomUUID();
         const sfn = (s) => io.of(curr).to(r).emit("tool status", [id, s]);
         sendFn(`<tool-status>${id}|${t.name}</tool-status>`);
@@ -977,7 +971,7 @@ const sendAIMessage = async (
             With the data provided by the ${t.name} tool:
             ${data}
 
-            Reply to this prompt (assuming you have already said the response and without using the tool again):
+            Reply to the user's prompt:
             ${prompt}
           `,
             us,
@@ -1003,11 +997,11 @@ const sendAIMessage = async (
 
 const sendMessage = (message, us, curr, p = false) => {
   const o = online;
-  let isImage = false;
+  let isFile = false;
   if (!message) return;
   if (message.includes("data:")) {
     message = upload(message);
-    isImage = true;
+    isFile = true;
   }
   const rooms = get("rooms");
   const lastMessage =
@@ -1048,7 +1042,7 @@ const sendMessage = (message, us, curr, p = false) => {
   } else
     io.of(curr).emit("chat message", [message, us, new Date(), lastMessage, 0]);
   return {
-    isImage,
+    isFile,
     message,
   };
 };
