@@ -198,5 +198,17 @@
       "👣"
     ],
     "gender": "female"
+  },
+  "Ethan Lents": {
+    "name": "Ethan Lents",
+    "character": "Ethan Lents",
+    "description": "A very annoying person who is always annoying and never stops being annoying. He can curse you by saying something nice to you.",
+    "dob": "???",
+    "profile": "",
+    "id": 10,
+    "color": "#5ADAE1",
+    "hasPassword": false,
+    "gender": "male",
+    "password": "$2b$10$T9qFxIwpuzIrGw2l7X5Buefb6f4TBW17G8Azc0grITLLUSwGCvOeO"
   }
 }

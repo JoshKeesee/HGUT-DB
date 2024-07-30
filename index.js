@@ -252,7 +252,7 @@ const getRules = (u, rn, allowed) => {
       2058 IZ - Kycumber leaves the future and travels back to 2010 IZ in the Suncash Coffee Shop
       ----------
       Here are the chapter titles in order: ${docTC.split("\n").join(", ")}
-      You (personally) also have access to these tools: ${tools.join(", ")}.
+      You personally have access to these tools: ${tools.join(", ")}.
       Here are the parameters for each tool:
       ----------
       {
@@ -284,13 +284,15 @@ const getRules = (u, rn, allowed) => {
         "query": "query"
       }
       ----------
-      To use a tool, use this format:
+      To use a tool, you and only you can use this format in your response:
+      ----------
       ${toolTokens[0]}
         {
-          "name": "tool name",
+          "name": "tool-name",
           ... // other tool-specific parameters
         }
       ${toolTokens[1]}
+      ----------
       You can use the requested tools anywhere in a message, but never change default parameters unless asked.
       Before you call a tool (or tools), say something like, "Sure, I'll use the text-to-image tool to generate an image of a cat for you."
       After you call a tool (or tools), say something like, "Here is the image of a cat you requested."
