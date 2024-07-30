@@ -116,7 +116,7 @@ removeUnusedFiles();
 
 const docs = require("@googleapis/docs");
 const mime = require("mime-types");
-const tools = ["text-to-image", "text-to-audio", "text-to-video", "chapter-context"];
+const tools = ["text-to-image", "text-to-audio", "text-to-video", "web-search"];
 const toolTokens = ["BEGIN_CALL_TOOL", "END_CALL_TOOL"];
 
 const client = docs.docs({
@@ -141,7 +141,8 @@ const getDocument = async () => {
 const getDocumentText = async (data) => {
   const text = data.body.content
     .map((e) => e.paragraph?.elements.map((e) => e.textRun?.content).join(""))
-    .join("").replaceAll("…", "...");
+    .join("")
+    .replaceAll("…", "...");
   return text;
 };
 
@@ -150,11 +151,15 @@ const getDocumentTC = async (data) => {
     .tableOfContents.content;
   let txt = tc
     ?.map((e) => e.paragraph?.elements.map((e) => e.textRun?.content).join(""))
-    .join("").replaceAll("…", "...");
+    .join("")
+    .replaceAll("…", "...");
   const re = /\d+/g;
   const matches = txt.match(re);
   if (matches) matches.forEach((m) => (txt = txt.replace(m, "")));
-  txt = txt.split("\n").map(e => e.trim()).join("\n");
+  txt = txt
+    .split("\n")
+    .map((e) => e.trim())
+    .join("\n");
   return txt;
 };
 
@@ -169,7 +174,8 @@ updateDoc();
 setInterval(updateDoc, 1000 * 60 * 60 * 24);
 
 const getRules = (u, rn, allowed) => {
-  if (allowed == "all") allowed = Object.keys(profiles).map((k) => profiles[k].id);
+  if (allowed == "all")
+    allowed = Object.keys(profiles).map((k) => profiles[k].id);
   const authorInfo = `
     Name: %n
     Id (in the chat app): %id
@@ -257,11 +263,13 @@ const getRules = (u, rn, allowed) => {
         "NUM_IMAGES_PER_PROMPT": [1-4] // Default: 1
       }
       ----------
+      ----------
       {
         "name": "text-to-audio",
         "prompt": "prompt",
         "seconds_total": [0-47] // Default: 30
       }
+      ----------
       ----------
       {
         "name": "text-to-video",
@@ -270,12 +278,12 @@ const getRules = (u, rn, allowed) => {
         "motion": ["", "guoyww/animatediff-motion-lora-zoom-in", "guoyww/animatediff-motion-lora-zoom-out", "guoyww/animatediff-motion-lora-tilt-up", "guoyww/animatediff-motion-lora-tilt-down", "guoyww/animatediff-motion-lora-pan-left", "guoyww/animatediff-motion-lora-pan-right", "guoyww/animatediff-motion-lora-rolling-anticlockwise", "guoyww/animatediff-motion-lora-rolling-clockwise"] // Default: "guoyww/animatediff-motion-lora-zoom-in"
       }
       ----------
+      ----------
       {
-        "name": "chapter-context",
-        "chapter": "chapter title"
+        "name": "web-search",
+        "query": "query"
       }
       ----------
-      The "chapter-context" tool should only be used when a question about the book is asked. If this happens, only reply with that tool (nothing else).
       To use a tool, use this format:
       ${toolTokens[0]}
         {
@@ -286,6 +294,7 @@ const getRules = (u, rn, allowed) => {
       You can use the requested tools anywhere in a message, but never change default parameters unless asked.
       Before you call a tool (or tools), say something like, "Sure, I'll use the text-to-image tool to generate an image of a cat for you."
       After you call a tool (or tools), say something like, "Here is the image of a cat you requested."
+      You have access to real-time information using the "web-search" tool. If you don't know something, use this tool.
   `;
 };
 
@@ -296,6 +305,7 @@ const formatMessages = (messages, u, user, rn, allowed) => {
     const r = m.name == u.name ? "assistant" : "user";
     const part =
       (r == "user" ? `${m.name} (${new Date(m.date)}): ` : "") + m.message;
+    if (m.message.startsWith("<tool-status>")) continue;
     if (currRole == r && fm.length) fm[fm.length - 1].content += `\n${part}`;
     else {
       currRole = r;
@@ -335,17 +345,42 @@ const AlfredIndigo = async (prompt, us, messages = [], max_tokens = 1000) => {
   if (data["error"]) return { error: data["error"] };
   else return data["response"];
 };
-const generateContent = async (d) => {
-  const data = await (
-    await fetch(`${localServer}/${d.name}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(d),
-    })
-  ).json();
+const generateContent = async (d, sfn = () => {}) => {
+  const response = await fetch(`${localServer}/generate-content`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(d),
+  });
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let done = false;
+  let data = {};
+
+  while (!done) {
+    const { value, done: readerDone } = await reader.read();
+    done = readerDone;
+
+    if (value) {
+      const chunk = decoder.decode(value, { stream: true });
+      const es = chunk.split("\n\n");
+      for (const e of es) {
+        if (e.trim().length > 0) {
+          let parsedEvent = "";
+          try {
+            parsedEvent = JSON.parse(e.replace(/^data: /, ""));
+          } catch {}
+          if (parsedEvent) {
+            data = parsedEvent;
+            if (data.status) sfn(data.status);
+          }
+        }
+      }
+    }
+  }
+
   if (data["error"]) return { error: data["error"] };
   else return data["response"];
 };
@@ -925,31 +960,33 @@ const sendAIMessage = async (
         const re = nextIter(i, st, et)[0];
         if (re && !re.includes(toolTokens[0])) sendFn(re);
         if (!tools.includes(t.name)) continue;
-        if (t.name == "chapter-context") {
-          const c = docTC.split("\n").find((e) => e.toLowerCase().includes(t.chapter.toLowerCase()));
-          const i = docTC.split("\n").indexOf(c);
-          if (!c) continue;
-          const d = docText.split(c)[1]?.split(docTC.split("\n")[i + 1])[0];
-          if (!d) continue;
-          sendAIMessage(`
-            With the chapter "${c}" in mind, here is the content:
-            ----------
-            ${d}
-            ----------
-            Reply to this message (without using any tools):
-            ----------
-            ${prompt}
-            ----------
-          `, us, aiUser, false, curr, false, false);
-          return;
-        }
+        const ws = t.name == "web-search";
+        const id = crypto.randomUUID();
+        const sfn = (s) => io.of(curr).to(r).emit("tool status", [id, s]);
+        sendFn(`<tool-status>${id}|${t.name}</tool-status>`);
         setTyping();
-        const data = await generateContent(t);
+        const data = await generateContent(t, sfn);
         if (data.error) {
           io.of(curr).to(r).emit("ai error", data.error);
           sendFn(`Sorry, an error occurred while using the ${t.name} tool.`);
           return;
         }
+        if (ws)
+          return sendAIMessage(
+            `
+            With the data provided by the ${t.name} tool:
+            ${data}
+
+            Reply to this prompt (assuming you have already said the response and without using the tool again):
+            ${prompt}
+          `,
+            us,
+            aiUser,
+            false,
+            curr,
+            false,
+            false
+          );
         sendFn(data);
         i++;
       }
