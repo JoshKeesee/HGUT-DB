@@ -5,6 +5,7 @@ import logging
 import warnings
 import sys
 import requests
+import json
 from bs4 import BeautifulSoup
 from quart import Quart, request, jsonify, Response
 from gradio_client import Client
@@ -22,12 +23,13 @@ v = Client("Nymbo/Instant-Video", hf_token=os.getenv("HF_TOKEN"))
 
 async def iter_over_async(ait):
     async for item in ait:
-        yield item
+        f = json.dumps(item)
+        yield f"data: {f} <end-event>"
 
 async def t(data):
     try:
         name = data["name"]
-        yield f"data: {{\"status\":\"Calling the {name} tool...\"}}\n\n"
+        yield {"status": f"Calling the {name} tool..."}
         del data["name"]
         if name == "text-to-image":
             r = i.predict(
@@ -36,7 +38,7 @@ async def t(data):
             )[0]["image"]
             fp = f"files/{round(time.time() * 1000)}.{r.split('.')[-1]}"
             shutil.move(r, fp)
-            yield f"data: {{\"response\":\"/{fp}\", \"status\":\"{name.capitalize()} tool completed\"}}\n\n"
+            yield {"response": f"/{fp}", "status": f"{name.capitalize()} tool completed"}
         elif name == "text-to-audio":
             r = a.predict(
                 **data,
@@ -44,7 +46,7 @@ async def t(data):
             )
             fp = f"files/{round(time.time() * 1000)}.{r.split('.')[-1]}"
             shutil.move(r, fp)
-            yield f"data: {{\"response\":\"/{fp}\", \"status\":\"{name.capitalize()} tool completed\"}}\n\n"
+            yield {"response": f"/{fp}", "status": f"{name.capitalize()} tool completed"}
         elif name == "text-to-video":
             r = v.predict(
                 **data,
@@ -52,27 +54,61 @@ async def t(data):
             )["video"]
             fp = f"files/{round(time.time() * 1000)}.{r.split('.')[-1]}"
             shutil.move(r, fp)
-            yield f"data: {{\"response\":\"/{fp}\", \"status\":\"{name.capitalize()} tool completed\"}}\n\n"
+            yield {"response": f"/{fp}", "status": f"{name.capitalize()} tool completed"}
         elif name == "web-search":
-            yield f"data: {{\"status\":\"Calling web search for {data['query']}...\"}}\n\n"
-            url = f"https://www.googleapis.com/customsearch/v1?key={os.getenv('GOOGLE_SEARCH_API')}&cx=f189b339c002241b9&q={data['query']}"
-            items = requests.get(url).json()["items"]
-            r = None
-            while r is None and len(items) > 0:
-                yield f"data: {{\"status\":\"Searching web page...\"}}\n\n"
-                r = requests.get(items[0]["link"])
-                yield f"data: {{\"status\":\"Extracting information from web page...\"}}\n\n"
+            results = []
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/111.0"
+            }
+            timeout = 5
+            with requests.Session() as s:
+                yield {"status": f"Calling web search for {data['query']}..."}
+                r = s.get(
+                    url="https://www.google.com/search",
+                    headers=headers,
+                    params={"q": data["query"], "num": 4, "udm": 14},
+                    timeout=timeout,
+                    verify=False
+                )
+                r.raise_for_status()
                 b = BeautifulSoup(r.text, "html.parser")
-                t = b.get_text()
-                t = " ".join(t.split(" ")[:1000]).replace("\n", " ").replace('"', "'").replace("{", "").replace("}", "")
-                r = None
-                if len(t) > 0:
-                    r = t
-                else:
-                    items.pop(0)
-            yield f"data: {{\"response\":\"{r}\", \"status\":\"{name.capitalize()} tool completed\"}}\n\n"
+                items = b.find_all("div", attrs={"class": "g"})
+                for item in items:
+                    link = item.find("a", href=True)["href"]
+                    yield {"status": f"Searching web page ({items.index(item) + 1}/{len(items)})..."}
+                    try:
+                        r = s.get(
+                            url=link,
+                            headers=headers,
+                            timeout=timeout,
+                            verify=False
+                        )
+                        r.raise_for_status()
+                        yield {"status": f"Extracting relevant information ({items.index(item) + 1}/{len(items)})..."}
+                        b = BeautifulSoup(r.text, "html.parser")
+                        for tag in b(["script", "style", "header", "footer", "nav", "form", "svg", "noscript"]):
+                            tag.extract()
+                        t = b.get_text(strip=True)
+                        max_chars = 500
+                        if len(t) > max_chars:
+                            t = t[:max_chars]
+                        results.append({
+                            "link": link,
+                            "text": t
+                        })
+                    except Exception as e:
+                        results.append({
+                            "link": link,
+                            "text": None
+                        })
+            f = ""
+            for result in results:
+                f += f"Link: {result['link']}\nText: {result['text']}\n"
+            f = str(f).strip()
+            yield {"response": f, "status": f"{name.capitalize()} tool completed"}
     except Exception as e:
-        yield f"data: {{\"error\":\"{str(e)}\"}}\n\n"
+        print(e)
+        yield {"error": str(e), "status": f"An error occurred while calling the {name} tool"}
 
 app = Quart(__name__)
 

@@ -367,17 +367,15 @@ const generateContent = async (d, sfn = () => {}) => {
 
     if (value) {
       const chunk = decoder.decode(value, { stream: true });
-      const es = chunk.split("\n\n");
+      const es = chunk.replaceAll("data: ", "").split("<end-event>");
       for (const e of es) {
         if (e.trim().length > 0) {
-          let parsedEvent = "";
+          let p;
           try {
-            parsedEvent = JSON.parse(e.replace(/^data: /, ""));
+            p = JSON.parse(e);
           } catch {}
-          if (parsedEvent) {
-            data = parsedEvent;
-            if (data.status) sfn(data.status);
-          }
+          if (p) data = p;
+          if (data.status) sfn(data.status);
         }
       }
     }
@@ -998,7 +996,6 @@ const sendAIMessage = async (
       if (re && !re.includes(toolTokens[0])) sendFn(re);
     } catch (e) {
       console.log(e);
-      console.log(res);
     }
     setTyping(false);
   }
