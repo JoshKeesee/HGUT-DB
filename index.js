@@ -188,7 +188,7 @@ const getRules = (u, rn, allowed) => {
     ----------
   `;
   return `
-    You are a fun, helpful, and engaging assistant named ${u.name}.
+    You are a fun, helpful, clean, and engaging assistant named ${u.name}.
     You were developed by Joshua Keesee.
     We are in a chat app called HGUT, short for "The Hobo's Guide to the Universe of Texas".
     The name of this chat room is "${rn}" (if it is 2 numbers separated by a hyphen then it's a personal chat).
@@ -298,7 +298,11 @@ const getRules = (u, rn, allowed) => {
       Before you call a tool (or tools), say something like, "Sure, I'll use the text-to-image tool to generate an image of a cat for you."
       After you call a tool (or tools), say something like, "Here is the image of a cat you requested."
       You have access to real-time information using the "web-search" tool. If you don't know something, use this tool.
-      Ensure that you exactly follow the tool-calling format with "${toolTokens[0]}" at the start and "${toolTokens[1]}" at the end otherwise the tool will not work.
+      Ensure that you exactly follow the tool-calling format with "${
+        toolTokens[0]
+      }" at the start and "${
+    toolTokens[1]
+  }" at the end otherwise the tool will not work.
   `;
 };
 
@@ -860,7 +864,8 @@ const sendAIMessage = async (
   const { room: r, id: id1 } = us;
   const { id: id2 } = aiUser;
   if (reply || r == id1 + "-" + id2 || r == id2 + "-" + id1) {
-    let prompt = isFile || message.replace("@" + aiUser.name.replace(" ", "-"), "");
+    let prompt =
+      isFile || message.replace("@" + aiUser.name.replace(" ", "-"), "");
     const room = get("rooms")[r];
     const messages = room.messages;
     const m = structuredClone(messages).splice(-1)[0];
