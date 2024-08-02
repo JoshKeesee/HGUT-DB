@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "python alfred-indigo.py & node index.js",
-    "build": "npm install && pip install torch --index-url=https://download.pytorch.org/whl/cpu && pip install click quart huggingface_hub gradio_client bs4"
+    "build": "npm install && pip install click quart huggingface_hub gradio_client bs4"
   },
   "author": "JoshKeesee",
   "license": "ISC",
