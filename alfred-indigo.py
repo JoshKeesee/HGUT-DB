@@ -17,7 +17,7 @@ logger = logging.getLogger("werkzeug")
 logger.setLevel(logging.ERROR)
 
 c = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct", token=os.getenv("HF_TOKEN"))
-i = Client("Nymbo/Stable-Diffusion-3", hf_token=os.getenv("HF_TOKEN"))
+i = Client("markmagic/Stable-Diffusion-3-FREE", hf_token=os.getenv("HF_TOKEN"))
 a = Client("artificialguybr/Stable-Audio-Open-Zero", hf_token=os.getenv("HF_TOKEN"))
 v = Client("Nymbo/Instant-Video", hf_token=os.getenv("HF_TOKEN"))
 
