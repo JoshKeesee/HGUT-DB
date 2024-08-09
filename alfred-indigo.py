@@ -9,14 +9,14 @@ import json
 from bs4 import BeautifulSoup
 from quart import Quart, request, jsonify, Response
 from gradio_client import Client
-from huggingface_hub import InferenceClient
+from groq import Groq
 
 logging.disable(sys.maxsize)
 warnings.filterwarnings("ignore")
 logger = logging.getLogger("werkzeug")
 logger.setLevel(logging.ERROR)
 
-c = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct", token=os.getenv("HF_TOKEN"))
+c = Groq(api_key=os.getenv("GROQ"))
 i = Client("markmagic/Stable-Diffusion-3-FREE", hf_token=os.getenv("HF_TOKEN"))
 a = Client("artificialguybr/Stable-Audio-Open-Zero", hf_token=os.getenv("HF_TOKEN"))
 v = Client("Nymbo/Instant-Video", hf_token=os.getenv("HF_TOKEN"))
@@ -115,9 +115,9 @@ async def generate():
         data = await request.get_json()
         m = data["messages"]
         mt = data["max_tokens"]
-        r = c.chat_completion(
+        r = c.chat.completions.create(
             messages=m,
-            max_tokens=mt
+            model="llama-3.1-70b-versatile",
         )
         return jsonify({"response": r.choices[0].message.content})
     except Exception as e:

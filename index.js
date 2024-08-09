@@ -165,7 +165,7 @@ const getDocumentTC = async (data) => {
 
 const updateDoc = async () => {
   const data = await getDocument();
-  // docText = await getDocumentText(data);
+  docText = await getDocumentText(data);
   docTC = await getDocumentTC(data);
   console.log("Document updated: " + new Date().toLocaleString());
 };
@@ -252,6 +252,10 @@ const getRules = (u, rn, allowed) => {
       2058 IZ - Kycumber leaves the future and travels back to 2010 IZ in the Suncash Coffee Shop
       ----------
       Here are the chapter titles in order: ${docTC.split("\n").join(", ")}
+      Here is the current story:
+      ----------
+      ${docText}
+      ----------
       You personally have access to these tools: ${tools.join(", ")}.
       Here are the parameters for each tool:
       ----------
