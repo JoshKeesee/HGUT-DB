@@ -264,7 +264,6 @@ const getRules = (u, rn, allowed) => {
         "prompt": "prompt",
         "width": [256-1536], // Default: 1024
         "height": [256-1536], // Default: 1024
-        "NUM_IMAGES_PER_PROMPT": [1-4] // Default: 1
       }
       ----------
       ----------

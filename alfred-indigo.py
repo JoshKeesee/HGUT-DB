@@ -17,7 +17,7 @@ logger = logging.getLogger("werkzeug")
 logger.setLevel(logging.ERROR)
 
 c = Groq(api_key=os.getenv("GROQ"))
-i = Client("markmagic/Stable-Diffusion-3-FREE", hf_token=os.getenv("HF_TOKEN"))
+i = Client("fcyai/FLUX.1-merged", hf_token=os.getenv("HF_TOKEN"))
 a = Client("artificialguybr/Stable-Audio-Open-Zero", hf_token=os.getenv("HF_TOKEN"))
 v = Client("Nymbo/Instant-Video", hf_token=os.getenv("HF_TOKEN"))
 
@@ -34,8 +34,8 @@ async def t(data):
         if name == "text-to-image":
             r = i.predict(
                 **data,
-                api_name="/run"
-            )[0]["image"]
+                api_name="/infer"
+            )[0]
             fp = f"files/{round(time.time() * 1000)}.{r.split('.')[-1]}"
             shutil.move(r, fp)
             yield {"response": f"/{fp}", "status": f"{name.capitalize()} tool completed"}
